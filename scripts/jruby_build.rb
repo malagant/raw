@@ -203,8 +203,142 @@ class JrubyBuild < RAW::AntProject
       available(:property => 'junit.present', :classname => 'junit.framework.TestCase', :classpathref => 'build.classpath')
       available(:property => 'cglib.present', :classname => 'net.sf.cglib.reflect.FastClass', :classpathref => 'build.classpath')
     end
+    #    <!-- Checks if specific libs and versions are avaiable -->
+    #    <target name="check-for-optional-packages" if="jdk1.5+"
+    #            depends="check-for-optional-java4-packages">
+    #      <available property="sun-misc-signal"
+    #                 classname="sun.misc.Signal"/>
+    #    </target>
+
+    def check_for_optional_packages
+      check_for_optional_java4_packages # TODO if jdk1.5+
+      available(:property => 'sun-misc-signal', :classname => 'sun.misc.Signal')
+    end
+
+    #<!-- Builds the Ant tasks that we need later on in the build -->
+    # <target name="compile-tasks" depends="prepare">
+    #   <copy todir="${jruby.classes.dir}">
+    #       <fileset dir="${src.dir}">
+    #           <include name="**/*.rb"/>
+    #       </fileset>
+    #   </copy>
+    #   <copy todir="${jruby.classes.dir}/builtin">
+    #       <fileset dir="${lib.dir}/ruby/site_ruby/1.8/builtin">
+    #           <include name="**/*.rb"/>
+    #       </fileset>
+    #   </copy>
+    #
+    #   <tstamp>
+    #       <format property="build.date" pattern="yyyy-MM-dd"/>
+    #   </tstamp>
+    #
+    #   <copy todir="${jruby.classes.dir}" overwrite="true">
+    #       <fileset dir="${src.dir}">
+    #           <include name="**/*.properties"/>
+    #       </fileset>
+    #       <filterset>
+    #           <filter token="os.arch" value="${os.arch}"/>
+    #           <filter token="java.specification.version" value="${java.specification.version}"/>
+    #           <filter token="javac.version" value="${javac.version}"/>
+    #           <filter token="build.date" value="${build.date}"/>
+    #       </filterset>
+    #   </copy>
+    # </target>
+    def compile_tasks 
+      prepare # TODO depends implementing
+      copy(:toDir => @jruby_classes_dir) do
+        fileset(:dir => @src_dir) do
+          include :name => '**/*.rb'
+        end
+      end
+      copy(:toDir => @jruby_classes_dir + '/builtin') do
+        fileset(:dir => @lib_dir + '/ruby/site_ruby/1.8/builtin') do
+          include :name => '**/*.rb'
+        end
+      end
+      tstamp do |t|
+        t.format(:property => 'build.date', :pattern => 'yyyy-MM-dd')
+      end
+      copy(:todir => @jruby_classes_dir, :overwrite => 'true') do
+        fileset(:dir => @src_dir) do
+          include(:name => '**/*.properties')
+        end
+        filterset do |t|
+          filter :token => 'os.arch', :value => '${os.arch}'
+          filter :token => 'java.specification.version', :value => '${java.specification.version}'
+          filter :token => 'javac.version', :value => '${javac.version}'
+          filter :token => 'build.date', :value => '${build.date}'
+        end
+      end
+    end
+    #<target name="compile-annotation-binder">
+    #  <mkdir dir="${basedir}/src_gen"/>
+    #
+    #  <javac destdir="${jruby.classes.dir}" debug="true" srcdir="${src.dir}" sourcepath="" classpathref="build.classpath"
+    #       source="${javac.version}" target="${javac.version}" deprecation="true" encoding="UTF-8">
+    #      <include name="org/jruby/anno/FrameField.java"/>
+    #      <include name="org/jruby/anno/AnnotationBinder.java"/>
+    #      <include name="org/jruby/anno/JRubyMethod.java"/>
+    #      <include name="org/jruby/anno/FrameField.java"/>
+    #      <include name="org/jruby/CompatVersion.java"/>
+    #      <include name="org/jruby/runtime/Visibility.java"/>
+    #      <include name="org/jruby/util/CodegenUtils.java"/>
+    #  </javac>
+    #</target>
+    #
+    def compile_annotation_binder 
+      mkdir :dir => @base_dir + '/src_gen'
+      javac(:destdir => @jruby_classes_dir,
+            :debug => true,
+            :srcdir => @src_dir,
+            :sourcepath => '',
+            :classpath => 'build.classpath',
+            :source => '${javac.version}',
+            :target => '${javac.version}',
+            :deprecation => true,
+            :encoding => 'UTF-8') do
+        include(:name => 'org/jruby/anno/FrameField.java')
+        include(:name => 'org/jruby/anno/AnnotationBinder.java')
+        include(:name => 'org/jruby/anno/JRubyMethod.java')
+        include(:name => 'org/jruby/CompatVersion.java')
+        include(:name => 'org/jruby/runtime/Visibility.java')
+        include(:name => 'org/jruby/util/CodegenUtils.java')
+      end
+    end
+    #<target name="compile-jruby" depends="compile-tasks, compile-annotation-binder, check-for-optional-packages">
+    #  <!-- Generate binding logic ahead of time -->
+    #  <apt factory="org.jruby.anno.AnnotationBinder" destdir="${jruby.classes.dir}" debug="true" source="${javac.version}"
+    #     target="${javac.version}" deprecation="true" encoding="UTF-8">
+    #    <classpath refid="build.classpath"/>
+    #    <classpath path="${jruby.classes.dir}"/>
+    #    <src path="${src.dir}"/>
+    #    <patternset refid="java.src.pattern"/>
+    #    <compilerarg line="-XDignore.symbol.file=true"/>
+    #    <compilerarg line="-J-Xmx512M"/>
+    #  </apt>
+    #</target>
+    def compile_jruby
+      compile_tasks
+      compile_annotation_binder
+      check_for_optional_packages
+
+      apt(:factory => 'org.jruby.anno.AnnotationBinder',
+          :destdir => @jruby_classes_dir,
+          :debug => true,
+          :source => '${javac.version}',
+          :target => '${javac.version}',
+          :deprecation => true,
+          :encoding => 'UTF-8') do
+        classpath(:refid => 'build.classpath')
+        classpath(:path => @jruby_classes_dir)
+        src(:path => @src_dir)
+        patternset(:refid => 'java.src.pattern')
+        compilerarg(:line => '-XDignore.symbol.file=true')
+        compilerarg(:line => '-J-Xmx512M')
+      end
+    end
   end
 end
 
 raw = JrubyBuild.new
-raw.check_for_optional_java4_packages
+raw.compile_jruby
