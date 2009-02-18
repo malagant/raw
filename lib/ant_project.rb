@@ -1,4 +1,3 @@
-# Copyright 2008 Caleb Powell 
 # Licensed under the Apache License, Version 2.0 (the "License"); 
 # you may not use this file except in compliance with the License. 
 # You may obtain a copy of the License at 
@@ -22,7 +21,7 @@ module RAW
     # This is for further initializations inside the constructor
     def init_project(options)
       
-      @project= RAW::ApacheAnt::Project.new
+      @project = RAW::ApacheAnt::Project.new
       @project.name = options[:name] || ''
       @project.default = ''
       @project.basedir = options[:basedir] || FileUtils::pwd

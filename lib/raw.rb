@@ -12,6 +12,7 @@
 require 'raw_utilities'
 require 'ant_project'
 require 'ant_task'
+require 'fileutils'
 
 module RAW
   # Loading modules of apache ant
