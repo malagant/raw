@@ -188,4 +188,8 @@ describe RAW::AntProject, 'initialized' do
     File.exists?(@output_dir + '/classes/foo/bar/FooBar.class').should be_true
     File.exists?(@output_dir + '/classes/foo/bar/baz/FooBarBaz.class').should be_false
   end
+
+  it "should define a tasdef with custom classpath" do
+    @ant.taskdef(:name => 'retro', :classname => 'foo.bar.Parent', :classpath => @resource_dir)
+  end
 end   

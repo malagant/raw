@@ -16,9 +16,12 @@ class JrubyBuild < RAW::AntProject
         :logger => Logger.new(STDOUT),
         :loglevel => Logger::DEBUG,
         :default => 'jar',
-        :anthome => @ant_home,
-        :declarative => true})
+        :anthome => @ant_home})
     
+    # <import file="netbeans-ant.xml" optional="true"/>
+    # _import because import is a jruby key word
+    # _import(:file => 'netbeans-ant.xml', :optional => true)
+
     @resource_dir = File.join(FileUtils::pwd, '..', 'spec', 'resources')
     @ant_home = File.join(@resource_dir, 'apache-ant-1.7.1')
     @jruby_src = @resource_dir + '/jruby-1.1.6'
@@ -52,6 +55,7 @@ class JrubyBuild < RAW::AntProject
     @jruby_test_memory = '512M'
     @jruby_test_jvm = 'java'
 
+    property(:name => 'basedir', :value => @base_dir)
     property(:name => 'build_lib_dir', :value => @build_lib_dir)
     # include BuildProperties
     # <description>JRuby is a pure Java implementation of a Ruby interpreter.</description>
@@ -71,9 +75,9 @@ class JrubyBuild < RAW::AntProject
     #  <fileset dir="${build.lib.dir}" includes="*.jar"/>
     #  <fileset dir="${lib.dir}" includes="bsf.jar"/>
     # </path>
-    path( :id => 'build.classpath') do |path|
-      path.fileset( :file => '${build_lib_dir}', :includes => '*.jar')
-      path.fileset( :file => @lib_dir, :includes => 'bsj.jar')
+    path( :id => 'build.classpath') do
+      fileset( :dir => '${build_lib_dir}', :includes => '*.jar')
+      fileset( :dir => @lib_dir, :includes => 'bsj.jar')
     end
     # <property name="emma.dir" value="${build.lib.dir}" />
     property( :name => 'emma.dir', :value => @build_lib_dir)
@@ -114,14 +118,93 @@ class JrubyBuild < RAW::AntProject
     # <taskdef name="retro"
     # classname="net.sourceforge.retroweaver.ant.RetroWeaverTask"
     # classpathref="build.classpath"/>
-  
     taskdef(:name => 'retro',
-      :classname => 'net.sourceforge.retroweaver.ant.RetroWeaverTask',
-      :classpathref => 'build.classpath')   
+            :classname => 'net.sourceforge.retroweaver.ant.RetroWeaverTask',
+            :classpathref => 'build.classpath')
 
-    # <import file="netbeans-ant.xml" optional="true"/>
-    import(:file => 'netbeans-ant.xml', :optional => true)
+    #<target name="init">
+    #   <xmlproperty file="build-config.xml" keepRoot="false" collapseAttributes="true"/>
+    #   <tstamp><format property="build.date" pattern="yyyy-MM-dd"/></tstamp>
+    #   <property environment="env"/>
+    #   <property name="version.ruby" value="${version.ruby.major}.${version.ruby.minor}"/>
+    #   <!-- if ruby.home is not set, use env var -->
+    #   <condition property="ruby.home" value="${env.RUBY_HOME}">
+    #     <not><isset property="ruby.home"/></not>
+    #   </condition>
+    #   <property name="rdoc.archive" value="docs/rdocs.tar.gz"/>
+    #   <uptodate property="docsNotNeeded" srcfile="${rdoc.archive}" targetfile="${basedir}/share/ri/1.8/system/created.rid"/>
+    # </target>
+    def init
+      xmlproperty(:file => 'build-config.xml', :keepRoot => 'false', :collapseAttributes => true) if File.exists?('build-config.xml')
+      tstamp do |t|
+        t.format(:property => 'build.date', :pattern => 'yyyy-MM-dd')
+      end
+      property(:environment => "env")
+      property(:name => 'version.ruby', :value => '${version.ruby.major}.${version.ruby.minor}')
+      condition(:property => 'ruby.home', :value => '${env.RUBY_HOME}') do
+        _not do |n|
+          n.isset(:property => 'ruby.home')
+        end
+      end
+      property(:name => 'rdoc.archive', :value => 'docs/rdocs.tar.gz')
+      uptodate(:property => 'docsNotNeeded', :srcfile => '${rdoc.archive}', :targetfile => @base_dir + '/share/ri/1.8/system/created.rid')
+    end
+    #    <target name="extract-rdocs" depends="init" unless="docsNotNeeded">
+    #        <untar src="${rdoc.archive}" dest="${basedir}" compression="gzip"/>
+    #        <touch file="${basedir}/share/ri/1.8/system/created.rid"/>
+    #    </target>
+
+    def extract_rdocs
+      init
+      untar(:src => '${rdoc.archive}', :dest => @base_dir, :compression => 'gzip') unless @docsNotNeeded
+    end
+
+    #    <!-- Creates the directories needed for building -->
+    #    <target name="prepare" depends="extract-rdocs">
+    #      <mkdir dir="${build.dir}"/>
+    #      <mkdir dir="${classes.dir}"/>
+    #      <mkdir dir="${jruby.classes.dir}"/>
+    #      <mkdir dir="${test.classes.dir}"/>
+    #      <mkdir dir="${test.results.dir}"/>
+    #      <mkdir dir="${html.test.results.dir}"/>
+    #      <mkdir dir="${docs.dir}"/>
+    #      <mkdir dir="${api.docs.dir}"/>
+    #    </target>
+
+    def prepare
+      mkdir :dir => @build_dir
+      mkdir :dir => @classes_dir
+      mkdir :dir => @jruby_classes_dir
+      mkdir :dir => @test_classes_dir
+      mkdir :dir => @test_results_dir
+      mkdir :dir => @html_test_results_dir
+      mkdir :dir => @docs_dir
+      mkdir :dir => @api_docs_dir
+    end
+    #    <!-- Checks if specific libs and versions are avaiable -->
+    #    <target name="check-for-optional-java4-packages"
+    #            depends="init">
+    #      <available property="jdk1.4+" classname="java.lang.CharSequence"/>
+    #      <available property="jdk1.5+" classname="java.lang.StringBuilder"/>
+    #      <available property="bsf.present" classname="org.apache.bsf.BSFManager"
+    #                 classpathref="build.classpath"/>
+    #      <available property="junit.present" classname="junit.framework.TestCase"
+    #                 classpathref="build.classpath"/>
+    #      <available property="cglib.present"
+    #                 classname="net.sf.cglib.reflect.FastClass"
+    #                 classpathref="build.classpath"/>
+    #    </target>
+    #
+    def check_for_optional_java4_packages
+      init
+      available(:property => 'jdk1.4+', :classname => 'java.lang.CharSequence')
+      available(:property => 'jdk1.5+', :classname => 'java.lang.StringBuilder')
+      available(:property => 'bsf.present', :classname => 'org.apache.bsf.BSFManager', :classpathref => 'build.classpath')
+      available(:property => 'junit.present', :classname => 'junit.framework.TestCase', :classpathref => 'build.classpath')
+      available(:property => 'cglib.present', :classname => 'net.sf.cglib.reflect.FastClass', :classpathref => 'build.classpath')
+    end
   end
 end
 
-JrubyBuild.new
+raw = JrubyBuild.new
+raw.check_for_optional_java4_packages
