@@ -4,10 +4,10 @@ require 'raw'
 
 class JrubyBuild < RAW::AntProject
   
-  @resource_dir = File.join(FileUtils::pwd, '..', 'spec', 'resources')
-  @ant_home = File.join(@resource_dir, 'apache-ant-1.7.1')
+  RESOURCE_DIR = File.join(FileUtils::pwd, '..', 'spec', 'resources')
+  ANT_HOME = File.join(RESOURCE_DIR, 'apache-ant-1.7.1')
   
-  RAW::RAWClassLoader.load_ant_libs @ant_home
+  RAW::RAWClassLoader.load_ant_libs ANT_HOME
 
   # <project basedir="." default="jar" name="JRuby">
   def initialize
@@ -22,10 +22,10 @@ class JrubyBuild < RAW::AntProject
     # _import because import is a jruby key word
     # _import(:file => 'netbeans-ant.xml', :optional => true)
 
-    @resource_dir = File.join(FileUtils::pwd, '..', 'spec', 'resources')
-    @ant_home = File.join(@resource_dir, 'apache-ant-1.7.1')
+    @resource_dir = RESOURCE_DIR
+    @ant_home = ANT_HOME
     @jruby_src = @resource_dir + '/jruby-1.1.6'
-    @base_dir = '.'
+    @base_dir = '/Users/mjohann/projects/jruby'
     @src_dir = 'src'
     @test_dir = 'test'
     @lib_dir = 'lib'
@@ -121,6 +121,7 @@ class JrubyBuild < RAW::AntProject
     taskdef(:name => 'retro',
             :classname => 'net.sourceforge.retroweaver.ant.RetroWeaverTask',
             :classpathref => 'build.classpath')
+  end # initialize
 
     #<target name="init">
     #   <xmlproperty file="build-config.xml" keepRoot="false" collapseAttributes="true"/>
@@ -244,7 +245,7 @@ class JrubyBuild < RAW::AntProject
     #       </filterset>
     #   </copy>
     # </target>
-    def compile_tasks 
+    def compile_tasks
       prepare # TODO depends implementing
       copy(:toDir => @jruby_classes_dir) do
         fileset(:dir => @src_dir) do
@@ -286,7 +287,7 @@ class JrubyBuild < RAW::AntProject
     #  </javac>
     #</target>
     #
-    def compile_annotation_binder 
+    def compile_annotation_binder
       mkdir :dir => @base_dir + '/src_gen'
       javac(:destdir => @jruby_classes_dir,
             :debug => true,
@@ -337,7 +338,145 @@ class JrubyBuild < RAW::AntProject
         compilerarg(:line => '-J-Xmx512M')
       end
     end
-  end
+
+    #<target name="compile" depends="compile-jruby"
+    #        description="Compile the source files for the project.">
+    #</target>
+    def compile
+      # Compile the source files for the project.
+      compile_jruby
+    end
+    #<target name="generate-method-classes" depends="compile">
+    #  <available file="src_gen/annotated_classes.txt" property="annotations.changed"/>
+    #  <antcall target="_gmc_internal_"/>
+    #</target>
+    def generate_method_classes
+      available(:file => 'src_gen/annotated_classes.txt', :property => 'annotations.changed')
+      _gmc_internal_ if @annotations_changed # TODO implement asap
+    end
+    #<target name="_gmc_internal_" if="annotations.changed">
+    #  <echo message="Generating invokers..."/>
+    #  <java classname="org.jruby.anno.InvokerGenerator" fork="true" failonerror="true">
+    #    <classpath refid="build.classpath"/>
+    #    <classpath path="${jruby.classes.dir}"/>
+    #    <!-- uncomment this line when building on a JVM with invokedynamic
+    #    <jvmarg line="-XX:+InvokeDynamic"/>
+    #    -->
+    #    <arg value="src_gen/annotated_classes.txt"/>
+    #    <arg value="${jruby.classes.dir}"/>
+    #  </java>
+    #
+    #  <echo message="Compiling populators..."/>
+    #  <javac destdir="${jruby.classes.dir}" debug="true" source="${javac.version}" target="${javac.version}" deprecation="true" encoding="UTF-8">
+    #     <classpath refid="build.classpath"/>
+    #     <classpath path="${jruby.classes.dir}"/>
+    #     <src path="src_gen"/>
+    #     <patternset refid="java.src.pattern"/>
+    #  </javac>
+    #
+    #  <delete file="src_gen/annotated_classes.txt"/>
+    #</target>
+    def _gmc_internal_
+      echo :message => 'Generating invokers...'
+      
+      _java(:classname => 'org.jruby.anno.InvokerGenerator',
+           :fork => true,
+           :failonerror => true) do
+        classpath :refid => 'build.classpath'
+        classpath :path => @jruby_classes_dir
+        # uncomment this line when building on a JVM with invokedynamic
+        # jvmarg :line => '-XX:+InvokeDynamic'
+        arg :value => 'src_gen/annotated_classes.txt'
+        arg :value => @jruby_classes_dir
+      end
+      
+      echo :message => 'Compiling populators...'
+      
+      _java(:destdir => @jruby_classes_dir,
+           :debug => true,
+           :source => '${javac.version}',
+           :target => '${javac.version}',
+           :deprecation => true,
+           :encoding => 'UTF-8') do
+        classpath :refid => 'build.classpath'
+        classpath :path => @jruby_classes_dir
+        src :path => 'src_gen'
+        patternset :refid => 'java.src.pattern'
+      end
+      delete :file => 'src_gen/annotated_classes.txt'
+    end
+    #<target name="generate-unsafe" depends="compile">
+    #    <available file="${jruby.classes.dir}/org/jruby/util/unsafe/GeneratedUnsafe.class" property="unsafe.not.needed"/>
+    #    <antcall target="_gu_internal_"/>
+    #</target>
+    def generate_unsafe
+      available :file => @jruby_classes_dir + '/org/jruby/util/unsafe/GeneratedUnsafe.class', :property => 'unsafe.not.needed'
+      _gu_internal_
+    end
+    #<target name="_gu_internal_" unless="unsafe.not.needed">
+    #  <echo message="Generating Unsafe impl..."/>
+    #  <java classname="org.jruby.util.unsafe.UnsafeGenerator" fork="true" failonerror="true">
+    #      <classpath refid="build.classpath"/>
+    #      <classpath path="${jruby.classes.dir}"/>
+    #      <!-- uncomment this line when building on a JVM with invokedynamic
+    #      <jvmarg line="-XX:+InvokeDynamic"/>
+    #      -->
+    #      <arg value="org.jruby.util.unsafe"/>
+    #      <arg value="${jruby.classes.dir}/org/jruby/util/unsafe"/>
+    #  </java>
+    #</target>
+    def _gu_internal_
+      echo :message => 'Generating unsafe impl...'
+      _java(:classname => 'org.jruby.util.unsafe.UnsafeGenerator', :fork => true, :failonerror => true) do
+        classpath :refid => 'build.classpath'
+        classpath :path => @jruby_classes_dir
+        # uncomment this line when building on a JVM with invokedynamic
+        # jvmarg :line => '-XX:+InvokeDynamic'
+        arg :value => 'org.jruby.util.unsafe'
+        arg :value => @jruby_classes_dir + '/org/jruby/util/unsafe'
+      end
+    end
+    #<target name="jar-jruby" depends="generate-method-classes, generate-unsafe" unless="jar-up-to-date">
+    #    <!-- TODO: Unfortunate dependency on ruby executable, and ruby might
+    #         not be present on user's side, so we ignore errors caused by that. -->
+    #    <exec executable="ruby" dir="${basedir}" failifexecutionfails="false" resultproperty="snapshot.result" errorproperty="snapshot.error">
+    #      <arg value="tool/snapshot.rb"/>
+    #      <arg value="${jruby.classes.dir}/org/jruby/jruby.properties"/>
+    #    </exec>
+    #
+    #    <jar destfile="${lib.dir}/jruby.jar" compress="false">
+    #      <fileset dir="${jruby.classes.dir}"/>
+    #      <zipfileset src="${build.lib.dir}/asm-3.0.jar"/>
+    #      <zipfileset src="${build.lib.dir}/asm-commons-3.0.jar"/>
+    #      <zipfileset src="${build.lib.dir}/asm-util-3.0.jar"/>
+    #      <zipfileset src="${build.lib.dir}/asm-analysis-3.0.jar"/>
+    #      <zipfileset src="${build.lib.dir}/asm-tree-3.0.jar"/>
+    #      <zipfileset src="${build.lib.dir}/bytelist-1.0.1.jar"/>
+    #      <zipfileset src="${build.lib.dir}/constantine.jar"/>
+    #      <zipfileset src="${build.lib.dir}/jvyamlb-0.2.5.jar"/>
+    #      <zipfileset src="${build.lib.dir}/jline-0.9.93.jar"/>
+    #      <zipfileset src="${build.lib.dir}/jcodings.jar"/>
+    #      <zipfileset src="${build.lib.dir}/joni.jar"/>
+    #      <zipfileset src="${build.lib.dir}/jna-posix.jar"/>
+    #      <zipfileset src="${build.lib.dir}/jna.jar"/>
+    #      <zipfileset src="${build.lib.dir}/joda-time-1.5.1.jar"/>
+    #      <zipfileset src="${build.lib.dir}/dynalang-0.3.jar"/>
+    #      <manifest>
+    #        <attribute name="Built-By" value="${user.name}"/>
+    #        <attribute name="Main-Class" value="org.jruby.Main"/>
+    #      </manifest>
+    #    </jar>
+    #</target>
+    def jar_jruby
+      exec(:executable => 'ruby',
+              :dir => @base_dir,
+              :failifexecutionfails => false,
+              :resultproperty => 'snapshot.result',
+              :errorproperty => 'snaptshot.error') do
+        arg :value => 'tool/snapshot.rb'
+        arg :value => @jruby_classes_dir + '/org/jruby/jruby.properties'
+      end
+    end
 end
 
 raw = JrubyBuild.new
