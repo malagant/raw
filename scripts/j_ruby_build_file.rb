@@ -5,11 +5,11 @@ RAW::RAWClassLoader.load_ant_libs ANT_HOME
 
 
 init_project :basedir => '/Users/mjohann/projects/jruby',
-        :name => 'JRuby',
-        :logger => Logger.new(STDOUT),
-        :loglevel => Logger::DEBUG,
-        :default => 'jar',
-        :anthome => ANT_HOME
+             :name => 'JRuby',
+             :logger => Logger.new(STDOUT),
+             :loglevel => Logger::DEBUG,
+             :default => 'jar',
+             :anthome => ANT_HOME
 
 @resource_dir = RESOURCE_DIR
 @ant_home = ANT_HOME
@@ -46,7 +46,7 @@ init_project :basedir => '/Users/mjohann/projects/jruby',
 
 property(:name => 'basedir', :value => @base_dir)
 property(:name => 'build_lib_dir', :value => @build_lib_dir)
-             
+
 # include BuildProperties
 # <description>JRuby is a pure Java implementation of a Ruby interpreter.</description>
 # JRuby is a pure Java implementation of a Ruby interpreter.
@@ -145,7 +145,7 @@ end
 #        <touch file="${basedir}/share/ri/1.8/system/created.rid"/>
 #    </target>
 
-target :extract_rdocs, :depends => :init do 
+target :extract_rdocs, :depends => :init do
   untar(:src => '${rdoc.archive}', :dest => @base_dir, :compression => 'gzip') unless @docsNotNeeded
 end
 
@@ -259,10 +259,211 @@ target :compile_tasks, :depends => :prepare do
     end
   end
 end
+#<target name="compile-annotation-binder">
+#  <mkdir dir="${basedir}/src_gen"/>
+#
+#  <javac destdir="${jruby.classes.dir}" debug="true" srcdir="${src.dir}" sourcepath="" classpathref="build.classpath"
+#       source="${javac.version}" target="${javac.version}" deprecation="true" encoding="UTF-8">
+#      <include name="org/jruby/anno/FrameField.java"/>
+#      <include name="org/jruby/anno/AnnotationBinder.java"/>
+#      <include name="org/jruby/anno/JRubyMethod.java"/>
+#      <include name="org/jruby/anno/FrameField.java"/>
+#      <include name="org/jruby/CompatVersion.java"/>
+#      <include name="org/jruby/runtime/Visibility.java"/>
+#      <include name="org/jruby/util/CodegenUtils.java"/>
+#  </javac>
+#</target>
+#
+target :compile_annotation_binder do
+  mkdir :dir => @base_dir + '/src_gen'
+  javac(:destdir => @jruby_classes_dir,
+        :debug => true,
+        :srcdir => @src_dir,
+        :sourcepath => '',
+        :classpath => 'build.classpath',
+        :source => '${javac.version}',
+        :target => '${javac.version}',
+        :deprecation => true,
+        :encoding => 'UTF-8') do
+    include(:name => 'org/jruby/anno/FrameField.java')
+    include(:name => 'org/jruby/anno/AnnotationBinder.java')
+    include(:name => 'org/jruby/anno/JRubyMethod.java')
+    include(:name => 'org/jruby/CompatVersion.java')
+    include(:name => 'org/jruby/runtime/Visibility.java')
+    include(:name => 'org/jruby/util/CodegenUtils.java')
+  end
+end
+#<target name="compile-jruby" depends="compile-tasks, compile-annotation-binder, check-for-optional-packages">
+#  <!-- Generate binding logic ahead of time -->
+#  <apt factory="org.jruby.anno.AnnotationBinder" destdir="${jruby.classes.dir}" debug="true" source="${javac.version}"
+#     target="${javac.version}" deprecation="true" encoding="UTF-8">
+#    <classpath refid="build.classpath"/>
+#    <classpath path="${jruby.classes.dir}"/>
+#    <src path="${src.dir}"/>
+#    <patternset refid="java.src.pattern"/>
+#    <compilerarg line="-XDignore.symbol.file=true"/>
+#    <compilerarg line="-J-Xmx512M"/>
+#  </apt>
+#</target>
+target :compile_jruby, :depends => [ :compile_tasks, :compile_annotation_binder, :check_for_optional_packages] do
+  apt(:factory => 'org.jruby.anno.AnnotationBinder',
+      :destdir => @jruby_classes_dir,
+      :debug => true,
+      :source => '${javac.version}',
+      :target => '${javac.version}',
+      :deprecation => true,
+      :encoding => 'UTF-8') do
+    classpath(:refid => 'build.classpath')
+    classpath(:path => @jruby_classes_dir)
+    src(:path => @src_dir)
+    patternset(:refid => 'java.src.pattern')
+    compilerarg(:line => '-XDignore.symbol.file=true')
+    compilerarg(:line => '-J-Xmx512M')
+  end
+end
+
+#<target name="compile" depends="compile-jruby"
+#        description="Compile the source files for the project.">
+#</target>
+target :compile, :depends => :compile_jruby do
+  # Compile the source files for the project.
+end
+#<target name="generate-method-classes" depends="compile">
+#  <available file="src_gen/annotated_classes.txt" property="annotations.changed"/>
+#  <antcall target="_gmc_internal_"/>
+#</target>
+target :generate_method_classes, :depends => :compile do
+  available(:file => 'src_gen/annotated_classes.txt', :property => 'annotations.changed')
+  _gmc_internal_ if @annotations_changed # TODO implement asap
+end
+#<target name="_gmc_internal_" if="annotations.changed">
+#  <echo message="Generating invokers..."/>
+#  <java classname="org.jruby.anno.InvokerGenerator" fork="true" failonerror="true">
+#    <classpath refid="build.classpath"/>
+#    <classpath path="${jruby.classes.dir}"/>
+#    <!-- uncomment this line when building on a JVM with invokedynamic
+#    <jvmarg line="-XX:+InvokeDynamic"/>
+#    -->
+#    <arg value="src_gen/annotated_classes.txt"/>
+#    <arg value="${jruby.classes.dir}"/>
+#  </java>
+#
+#  <echo message="Compiling populators..."/>
+#  <javac destdir="${jruby.classes.dir}" debug="true" source="${javac.version}" target="${javac.version}" deprecation="true" encoding="UTF-8">
+#     <classpath refid="build.classpath"/>
+#     <classpath path="${jruby.classes.dir}"/>
+#     <src path="src_gen"/>
+#     <patternset refid="java.src.pattern"/>
+#  </javac>
+#
+#  <delete file="src_gen/annotated_classes.txt"/>
+#</target>
+target :_gmc_internal_, :if => 'annotations.changed' do
+  echo :message => 'Generating invokers...'
+
+  _java(:classname => 'org.jruby.anno.InvokerGenerator',
+        :fork => true,
+        :failonerror => true) do
+    classpath :refid => 'build.classpath'
+    classpath :path => @jruby_classes_dir
+    # uncomment this line when building on a JVM with invokedynamic
+    # jvmarg :line => '-XX:+InvokeDynamic'
+    arg :value => 'src_gen/annotated_classes.txt'
+    arg :value => @jruby_classes_dir
+  end
+
+  echo :message => 'Compiling populators...'
+
+  _java(:destdir => @jruby_classes_dir,
+        :debug => true,
+        :source => '${javac.version}',
+        :target => '${javac.version}',
+        :deprecation => true,
+        :encoding => 'UTF-8') do
+    classpath :refid => 'build.classpath'
+    classpath :path => @jruby_classes_dir
+    src :path => 'src_gen'
+    patternset :refid => 'java.src.pattern'
+  end
+  delete :file => 'src_gen/annotated_classes.txt'
+end
+
+#<target name="generate-unsafe" depends="compile">
+#    <available file="${jruby.classes.dir}/org/jruby/util/unsafe/GeneratedUnsafe.class" property="unsafe.not.needed"/>
+#    <antcall target="_gu_internal_"/>
+#</target>
+target :generate_unsafe, :depends => :compile do
+  available :file => @jruby_classes_dir + '/org/jruby/util/unsafe/GeneratedUnsafe.class', :property => 'unsafe.not.needed'
+  _gu_internal_
+end
+#<target name="_gu_internal_" unless="unsafe.not.needed">
+#  <echo message="Generating Unsafe impl..."/>
+#  <java classname="org.jruby.util.unsafe.UnsafeGenerator" fork="true" failonerror="true">
+#      <classpath refid="build.classpath"/>
+#      <classpath path="${jruby.classes.dir}"/>
+#      <!-- uncomment this line when building on a JVM with invokedynamic
+#      <jvmarg line="-XX:+InvokeDynamic"/>
+#      -->
+#      <arg value="org.jruby.util.unsafe"/>
+#      <arg value="${jruby.classes.dir}/org/jruby/util/unsafe"/>
+#  </java>
+#</target>
+target :_gu_internal_, :unless => [ 'unsafe.not.needed'] do
+  echo :message => 'Generating unsafe impl...'
+  _java(:classname => 'org.jruby.util.unsafe.UnsafeGenerator', :fork => true, :failonerror => true) do
+    classpath :refid => 'build.classpath'
+    classpath :path => @jruby_classes_dir
+    # uncomment this line when building on a JVM with invokedynamic
+    # jvmarg :line => '-XX:+InvokeDynamic'
+    arg :value => 'org.jruby.util.unsafe'
+    arg :value => @jruby_classes_dir + '/org/jruby/util/unsafe'
+  end
+end
+#<target name="jar-jruby" depends="generate-method-classes, generate-unsafe" unless="jar-up-to-date">
+#    <!-- TODO: Unfortunate dependency on ruby executable, and ruby might
+#         not be present on user's side, so we ignore errors caused by that. -->
+#    <exec executable="ruby" dir="${basedir}" failifexecutionfails="false" resultproperty="snapshot.result" errorproperty="snapshot.error">
+#      <arg value="tool/snapshot.rb"/>
+#      <arg value="${jruby.classes.dir}/org/jruby/jruby.properties"/>
+#    </exec>
+#
+#    <jar destfile="${lib.dir}/jruby.jar" compress="false">
+#      <fileset dir="${jruby.classes.dir}"/>
+#      <zipfileset src="${build.lib.dir}/asm-3.0.jar"/>
+#      <zipfileset src="${build.lib.dir}/asm-commons-3.0.jar"/>
+#      <zipfileset src="${build.lib.dir}/asm-util-3.0.jar"/>
+#      <zipfileset src="${build.lib.dir}/asm-analysis-3.0.jar"/>
+#      <zipfileset src="${build.lib.dir}/asm-tree-3.0.jar"/>
+#      <zipfileset src="${build.lib.dir}/bytelist-1.0.1.jar"/>
+#      <zipfileset src="${build.lib.dir}/constantine.jar"/>
+#      <zipfileset src="${build.lib.dir}/jvyamlb-0.2.5.jar"/>
+#      <zipfileset src="${build.lib.dir}/jline-0.9.93.jar"/>
+#      <zipfileset src="${build.lib.dir}/jcodings.jar"/>
+#      <zipfileset src="${build.lib.dir}/joni.jar"/>
+#      <zipfileset src="${build.lib.dir}/jna-posix.jar"/>
+#      <zipfileset src="${build.lib.dir}/jna.jar"/>
+#      <zipfileset src="${build.lib.dir}/joda-time-1.5.1.jar"/>
+#      <zipfileset src="${build.lib.dir}/dynalang-0.3.jar"/>
+#      <manifest>
+#        <attribute name="Built-By" value="${user.name}"/>
+#        <attribute name="Main-Class" value="org.jruby.Main"/>
+#      </manifest>
+#    </jar>
+#</target>
+target :jar_jruby, :depends => [:generate_method_classes, :generate_unsafe], :unless => 'jar_up_to_date' do
+  exec(:executable => 'ruby',
+          :dir => @base_dir,
+          :failifexecutionfails => false,
+          :resultproperty => 'snapshot.result',
+          :errorproperty => 'snaptshot.error') do
+    arg :value => 'tool/snapshot.rb'
+    arg :value => @jruby_classes_dir + '/org/jruby/jruby.properties'
+  end
+end
 
 
 # Execute
 
-build :prepare
+build :compile
 
                          
