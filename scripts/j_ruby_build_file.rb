@@ -33,7 +33,7 @@ build_properties
 @resource_dir = RESOURCE_DIR
 @ant_home = ANT_HOME
 @jruby_src = @resource_dir + '/jruby-1.1.6'
-@build_lib_dir = @jruby_src + "/" + project.get_property('build.lib.dir')
+@build_lib_dir = @jruby_src + "/" + property_value('build.lib.dir')
 
 
 # <path id="build.classpath">
@@ -100,7 +100,7 @@ taskdef(:name => 'retro',
 #   <uptodate property="docsNotNeeded" srcfile="${rdoc.archive}" targetfile="${basedir}/share/ri/1.8/system/created.rid"/>
 # </target>
 target :init do
-  xmlproperty(:file => 'build-config.xml', :keepRoot => 'false', :collapseAttributes => true) if File.exists?(basedir +'/build-config.xml')
+  xmlproperty(:file => 'build-config.xml', :keepRoot => 'false', :collapseAttributes => true) if File.exists?(@base_dir +'/build-config.xml')
   tstamp do |t|
     t.format(:property => 'build.date', :pattern => 'yyyy-MM-dd')
   end
@@ -119,8 +119,9 @@ end
 #        <untar src="${rdoc.archive}" dest="${basedir}" compression="gzip"/>
 #        <touch file="${basedir}/share/ri/1.8/system/created.rid"/>
 #    </target>
-
 target :extract_rdocs, :depends => :init, :unless => "docsNotNeeded" do
+  build :init
+  logger.info "*** '#{@rdoc_archive}' basedir = #{basedir}"
   untar(:src => "#{@rdoc_archive}", :dest => basedir, :compression => 'gzip')
 end
 
