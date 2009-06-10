@@ -1,12 +1,12 @@
 require File.dirname(__FILE__) + '/spec_helper'
 
-describe RAW::AntProject, 'initialized' do
+describe RAW::RawRunner, 'initialized' do
   before(:each) do
     # Defining the output directory for our specs
-    @output_dir = File.join(FileUtils::pwd , 'spec', 'tmp', 'output')
+    @output_dir = File.join(FileUtils::pwd, 'tmp', 'output')
 
     # the resource directory with the sources we like to build
-    @resource_dir = File.join(FileUtils::pwd, 'spec', 'resources')
+    @resource_dir = File.join(FileUtils::pwd, 'resources')
 
     # The current ant_home of this project
     @ant_home = File.join(@resource_dir, 'apache-ant-1.7.1')
@@ -22,7 +22,7 @@ describe RAW::AntProject, 'initialized' do
     }
 
     # Creating the new instance of RAW::AntProject
-    @ant = RAW::AntProject.new(@ant_proj_props)
+    @ant = RAW::RawRunner.new(nil, '.', @ant_proj_props)
 
     if File.exists?(@output_dir)
       FileUtils.remove_dir(@output_dir)
@@ -38,13 +38,13 @@ describe RAW::AntProject, 'initialized' do
   end
 
   it "should be declarative" do
-    @ant = RAW::AntProject.new({ :declarative => false,
+    @ant = RAW::RawRunner.new({ :declarative => false,
             :loglevel => Logger::DEBUG,
             :ant_home => @ant_home })
     echo = @ant.echo :message => "RAW is really cool"
     echo.should_not be_nil
 
-    @ant = RAW::AntProject.new({ :declarative => true,
+    @ant = RAW::RawRunner.new({ :declarative => true,
             :loglevel => Logger::DEBUG,
             :ant_home => @ant_home })
 
@@ -61,7 +61,8 @@ describe RAW::AntProject, 'initialized' do
   end
 
   it "should return a valid timestamp" do
-    @ant.tstamp#.create_format({ :property => "TSTAMP_DE", :pattern => "dd.MM.yyyy hh:mm:ss"})
+    tstamp = @ant.tstamp#.create_format({ :property => "TSTAMP_DE", :pattern => "dd.MM.yyyy hh:mm:ss"})
+    puts "*** #{tstamp}"
   end
 
   it "should copy and remove files" do
@@ -192,4 +193,27 @@ describe RAW::AntProject, 'initialized' do
   it "should define a tasdef with custom classpath" do
     @ant.taskdef(:name => 'retro', :classname => 'foo.bar.Parent', :classpath => @resource_dir)
   end
-end   
+
+  it "should define property basedir" do
+    @ant.property(:name => 'bla', :value => "Hallo")
+    project.getProperty('bla').should == "Hallo"
+  end
+
+  it "should read and handle build.properties correctly" do
+    @ant.property(:file => '../default.build.properties')
+    project.get_property("jruby.classes.dir").should == '512M'
+  end
+
+  it "should have proper instance variables available" do
+    @ant.property(:file => '../default.build.properties')
+    @ant.instance_variable_defined?(:@jruby_classes_dir).should be_true    
+  end
+
+  # private methods
+  private
+
+  def project
+    @ant.project
+  end
+end
+

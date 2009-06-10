@@ -1,4 +1,4 @@
-RESOURCE_DIR = File.join(FileUtils::pwd, '..', 'spec', 'resources')
+RESOURCE_DIR = File.join(FileUtils::pwd, 'spec', 'resources')
 ANT_HOME = File.join(RESOURCE_DIR, 'apache-ant-1.7.1')
 
 RAW::RAWClassLoader.load_ant_libs ANT_HOME
@@ -7,45 +7,11 @@ RAW::RAWClassLoader.load_ant_libs ANT_HOME
 init_project :basedir => '/Users/mjohann/projects/jruby',
              :name => 'JRuby',
              :logger => Logger.new(STDOUT),
-             :loglevel => Logger::DEBUG,
+             :loglevel => Logger::INFO,
              :default => 'jar',
              :anthome => ANT_HOME
 
-@resource_dir = RESOURCE_DIR
-@ant_home = ANT_HOME
-@jruby_src = @resource_dir + '/jruby-1.1.6'
-@base_dir = '/Users/mjohann/projects/jruby'
-@src_dir = 'src'
-@test_dir = 'test'
-@lib_dir = 'lib'
-@spec_dir = @base_dir + '/spec'
-@rubyspec_dir = @spec_dir + '/ruby'
-@rails_dir = @test_dir + '/rails'
-@mspec_dir = @spec_dir + '/mspec'
-@rubyspec_1_8_dir = @rubyspec_dir + '/1.8'
-@spec_tags_dir = @spec_dir + '/tags'
-@build_lib_dir = @jruby_src + '/build_lib'
-@dist_dir = 'dist'
-@build_dir = @base_dir + '/build'
-@classes_dir = @build_dir + '/classes'
-@jruby_classes_dir = @classes_dir + '/jruby'
-@jruby_openssl_classes_dir = @classes_dir + '/openssl'
-@jruby_instrumented_classes_dir = @classes_dir + '/jruby-instrumented'
-@test_classes_dir = @classes_dir + '/test'
-@docs_dir = 'docs'
-@api_docs_dir = @docs_dir + '/api'
-@release_dir = 'release'
-@test_results_dir = @build_dir + '/test-results'
-@html_test_results_dir = @test_results_dir + '/html'
-@html_test_coverage_results_dir = @test_results_dir + '/html-coverage'
-@javac_version = '1.5'
-@jruby_compile_memory = '256M'
-@jruby_launch_memory = '512M'
-@jruby_test_memory = '512M'
-@jruby_test_jvm = 'java'
-
-property(:name => 'basedir', :value => @base_dir)
-property(:name => 'build_lib_dir', :value => @build_lib_dir)
+property(:name => 'base.dir', :location => project.get_property('basedir'))
 
 # include BuildProperties
 # <description>JRuby is a pure Java implementation of a Ruby interpreter.</description>
@@ -61,12 +27,21 @@ property( :file => 'rubyspecs.revision')
 #     setting local overrides, but that's how Ant works. -->
 # <property file="default.build.properties"/>
 property( :file => 'default.build.properties')
+
+build_properties
+
+@resource_dir = RESOURCE_DIR
+@ant_home = ANT_HOME
+@jruby_src = @resource_dir + '/jruby-1.1.6'
+@build_lib_dir = @jruby_src + "/" + project.get_property('build.lib.dir')
+
+
 # <path id="build.classpath">
 #  <fileset dir="${build.lib.dir}" includes="*.jar"/>
 #  <fileset dir="${lib.dir}" includes="bsf.jar"/>
 # </path>
 path( :id => 'build.classpath') do
-  fileset( :dir => '${build_lib_dir}', :includes => '*.jar')
+  fileset( :dir => @build_lib_dir, :includes => '*.jar')
   fileset( :dir => @lib_dir, :includes => 'bsj.jar')
 end
 # <property name="emma.dir" value="${build.lib.dir}" />
@@ -76,8 +51,8 @@ property( :name => 'emma.dir', :value => @build_lib_dir)
 #  <pathelement location="${emma.dir}/emma_ant.jar" />
 # </path>
 path(:id => 'emma.classpath') do
-  pathelement(:location => '${emma.dir}/emma.jar')
-  pathelement(:location => '${emma.dir}/emma_ant.jar')
+  pathelement(:location => @emma_dir + '/emma.jar')
+  pathelement(:location => @emma_dir + '/emma_ant.jar')
 end
 # <patternset id="java.src.pattern">
 #   <include name="**/*.java"/>
@@ -125,19 +100,19 @@ taskdef(:name => 'retro',
 #   <uptodate property="docsNotNeeded" srcfile="${rdoc.archive}" targetfile="${basedir}/share/ri/1.8/system/created.rid"/>
 # </target>
 target :init do
-  xmlproperty(:file => 'build-config.xml', :keepRoot => 'false', :collapseAttributes => true) if File.exists?('build-config.xml')
+  xmlproperty(:file => 'build-config.xml', :keepRoot => 'false', :collapseAttributes => true) if File.exists?(basedir +'/build-config.xml')
   tstamp do |t|
     t.format(:property => 'build.date', :pattern => 'yyyy-MM-dd')
   end
   property(:environment => "env")
-  property(:name => 'version.ruby', :value => '${version.ruby.major}.${version.ruby.minor}')
-  condition(:property => 'ruby.home', :value => '${env.RUBY_HOME}') do
+  property(:name => 'version.ruby', :value => "#{property_value("version.ruby.major")}.#{property_value("version.ruby.minor")}")
+  condition(:property => 'ruby.home', :value => "#{@env_RUBY_HOME}") do
     _not do |n|
       n.isset(:property => 'ruby.home')
     end
   end
   property(:name => 'rdoc.archive', :value => 'docs/rdocs.tar.gz')
-  uptodate(:property => 'docsNotNeeded', :srcfile => '${rdoc.archive}', :targetfile => @base_dir + '/share/ri/1.8/system/created.rid')
+  uptodate(:property => 'docsNotNeeded', :srcfile => "#{@rdoc_archive}", :targetfile => basedir + '/share/ri/1.8/system/created.rid')
 end
 
 #    <target name="extract-rdocs" depends="init" unless="docsNotNeeded">
@@ -145,8 +120,8 @@ end
 #        <touch file="${basedir}/share/ri/1.8/system/created.rid"/>
 #    </target>
 
-target :extract_rdocs, :depends => :init do
-  untar(:src => '${rdoc.archive}', :dest => @base_dir, :compression => 'gzip') unless @docsNotNeeded
+target :extract_rdocs, :depends => :init, :unless => "docsNotNeeded" do
+  untar(:src => "#{@rdoc_archive}", :dest => basedir, :compression => 'gzip')
 end
 
 #    <!-- Creates the directories needed for building -->
@@ -461,9 +436,95 @@ target :jar_jruby, :depends => [:generate_method_classes, :generate_unsafe], :un
   end
 end
 
+#<target name="jar" depends="init" description="Create the jruby.jar file">
+#  <antcall target="jar-jruby" inheritall="true"/>
+#</target>
+target :jar, :depends => :init do
+  antcall :target => "jar_jruby", :inheritall => true
+end
+#<target name="jar-dist" depends="init" description="Create the jruby.jar file for distribution. This version uses JarJar Links to rewrite some packages.">
+#  <antcall target="jar-jruby-dist" inheritall="true"/>
+#</target>
+target :jar_dist, :depends => :init do
+  antcall :target => "jar_jruby_dist", :inheritall => true
+end
+
+#<target name="jar-jruby-dist" depends="generate-method-classes, generate-unsafe" unless="jar-up-to-date">
+#    <!-- TODO: Unfortunate dependency on ruby executable, and ruby might
+#         not be present on user's side, so we ignore errors caused by that. -->
+#    <exec executable="ruby" dir="${basedir}" failifexecutionfails="false" >
+#      <arg value="tool/snapshot.rb"/>
+#      <arg value="${jruby.classes.dir}/org/jruby/jruby.properties"/>
+#    </exec>
+#
+#    <taskdef name="jarjar" classname="com.tonicsystems.jarjar.JarJarTask" classpath="${build.lib.dir}/jarjar-1.0rc8.jar"/>
+#    <jarjar destfile="${lib.dir}/jruby.jar" compress="true">
+#      <fileset dir="${jruby.classes.dir}"/>
+#      <zipfileset src="${build.lib.dir}/asm-3.0.jar"/>
+#      <zipfileset src="${build.lib.dir}/asm-commons-3.0.jar"/>
+#      <zipfileset src="${build.lib.dir}/asm-util-3.0.jar"/>
+#      <zipfileset src="${build.lib.dir}/asm-analysis-3.0.jar"/>
+#      <zipfileset src="${build.lib.dir}/asm-tree-3.0.jar"/>
+#      <zipfileset src="${build.lib.dir}/constantine.jar"/>
+#      <zipfileset src="${build.lib.dir}/bytelist-1.0.1.jar"/>
+#      <zipfileset src="${build.lib.dir}/jvyamlb-0.2.5.jar"/>
+#      <zipfileset src="${build.lib.dir}/jline-0.9.93.jar"/>
+#      <zipfileset src="${build.lib.dir}/jcodings.jar"/>
+#      <zipfileset src="${build.lib.dir}/joni.jar"/>
+#      <zipfileset src="${build.lib.dir}/jna-posix.jar"/>
+#      <zipfileset src="${build.lib.dir}/jna.jar"/>
+#      <zipfileset src="${build.lib.dir}/joda-time-1.5.1.jar"/>
+#      <zipfileset src="${build.lib.dir}/dynalang-0.3.jar"/>
+#      <manifest>
+#        <attribute name="Built-By" value="${user.name}"/>
+#        <attribute name="Main-Class" value="org.jruby.Main"/>
+#      </manifest>
+#      <rule pattern="org.objectweb.asm.**" result="jruby.objectweb.asm.@1"/>
+#    </jarjar>
+#    <antcall target="_osgify-jruby_" />
+#</target>
+target :jar_jruby_dist, :depends => [:generate_method_classes, :generate_unsafe ], :unless => "jar_up_to_date" do
+    # TODO: Unfortunate dependency on ruby executable, and ruby might
+    # TODO:  not be present on user's side, so we ignore errors caused by that.
+    exec :executable => "ruby", :dir => @basedir, :failifexecutionfails => false do
+      arg :value => "tool/snapshot.rb"
+      arg :value => "#{@jruby_classes_dir}/org/jruby/jruby.properties"
+    end
+
+    taskdef :name => "jarjar", :classname => "com.tonicsystems.jarjar.JarJarTask", :classpath => "#{@build_lib_dir}/jarjar-1.0rc8.jar"
+
+    jarjar :destfile => "#{@lib_dir}/jruby.jar", :compress => true do
+      fileset :dir => @jruby_classes_dir
+      zipfileset :src => "#{@build_lib_dir}/asm-3.0.jar"
+      zipfileset :src => "#{@build_lib_dir}/asm-commons-3.0.jar"
+      zipfileset :src => "#{@build_lib_dir}/asm-util-3.0.jar"
+      zipfileset :src => "#{@build_lib_dir}/asm-analysis-3.0.jar"
+      zipfileset :src => "#{@build_lib_dir}/asm-tree-3.0.jar"
+      zipfileset :src => "#{@build_lib_dir}/constantine.jar"
+      zipfileset :src => "#{@build_lib_dir}/bytelist-1.0.1.jar"
+      zipfileset :src => "#{@build_lib_dir}/jvyamlb-0.2.5.jar"
+      zipfileset :src => "#{@build_lib_dir}/jline-0.9.93.jar"
+      zipfileset :src => "#{@build_lib_dir}/jcodings.jar"
+      zipfileset :src => "#{@build_lib_dir}/joni.jar"
+      zipfileset :src => "#{@build_lib_dir}/jna-posix.jar"
+      zipfileset :src => "#{@build_lib_dir}/jna.jar"
+      zipfileset :src => "#{@build_lib_dir}/joda-time-1.5.1.jar"
+      zipfileset :src => "#{@build_lib_dir}/dynalang-0.3.jar"
+      manifest do
+        attribute :name => "Built-By", :value => @user_name
+        attribute :name => "Main-Class", :value => "org.jruby.Main"
+      end
+      rule :pattern => "org.objectweb.asm.**", :result => "jruby.objectweb.asm.@1"
+    end
+    antcall :target => "_osgify-jruby_"
+end
+
+
+
+#puts "Yeah #{RAW::ApacheAnt::Main.ant_version[/\d.\d.\d./]}"
 
 # Execute
+build :extract_rdocs
+#build :prepare
+#build :compile
 
-build :compile
-
-                         

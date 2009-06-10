@@ -11,16 +11,17 @@
 # under the License.
 
 module RAW
-  class AntProject 
+  class AntProject
     require 'logger'
     require 'ant_task'
-    
+    require 'ant_libraries'
+
     private
     @@classes_loaded = false
-    
+
     # This is for further initializations inside the constructor
     def init_project(options)
-      
+
       @project = RAW::ApacheAnt::Project.new
       @project.name = options[:name] || ''
       @project.default = ''
@@ -33,22 +34,22 @@ module RAW
       else
         @logger.debug("declarative is #{options[:declarative]}")
         self.declarative= options[:declarative]
-      end      
+      end
 
       default_logger = ApacheAnt::DefaultLogger.new
       default_logger.message_output_level = 2
       default_logger.output_print_stream = options[:outputstr] || JavaLang::System.out
       default_logger.error_print_stream = options[:errorstr] || JavaLang::System.err
       default_logger.emacs_mode = false
-      
+
       @project.add_build_listener(default_logger)
     end
-    
+
     public
     attr :project
     attr :ant_version
     attr_accessor(:declarative, :logger)
-    
+
     # Create an AntProject. Parameters are specified via a hash:
     # :ant_home=><em>Ant basedir</em>
     #   -A String indicating the location of the ANT_HOME directory. If provided, RAW will
@@ -73,72 +74,71 @@ module RAW
     #   -A Logger instance. Defaults to Logger.new(STDOUT)
     # :loglevel=><em>The level to set the logger to</em>
     #   -Defaults to Logger::ERROR
-    def initialize(options=Hash.new)
-      
+    def initialize(options = Hash.new)
+
       @logger = options[:logger] || Logger.new(STDOUT)
       @logger.level = options[:loglevel] || Logger::ERROR
-      
-      if(!@@classes_loaded && options[:ant_home])
+
+      if (!@@classes_loaded && options[:ant_home])
         @logger.debug("loading ant jar files. ANT_HOME: #{options[:ant_home]}")
         # Load all the jar files from ant
         RAWClassLoader.load_ant_libs(options[:ant_home])
         @@classes_loaded = true
       end
-      
+
       @logger.debug(RAW::ApacheAnt::Main.ant_version)
       @ant_version = RAW::ApacheAnt::Main.ant_version[/\d\.\d\.\d/].to_f
 
       init_project(options)
-      
+
       @task_stack = Array.new
     end
-    
+
     def method_missing(sym, *args)
-      
       begin
         task = AntTask.new(sym.to_s, self, args[0])
-        
+
         parent_task = @task_stack.last
         @task_stack << task
-        
+
         yield self if block_given?
-        
+
         parent_task.add(task) if parent_task
-        
-        if @task_stack.nitems == 1 
+
+        if @task_stack.nitems == 1
           if declarative == true
             @logger.debug("Executing #{task}")
-            task.execute 
-          else 
+            task.execute
+          else
             @logger.debug("Returning #{task}")
             return task
-          end  
+          end
         end
-        
+
       rescue
         @logger.error("Error instantiating '#{sym.to_s}' task: " + $!)
         raise
       ensure
         @task_stack.pop
       end
-      
+
     end
-    
+
     #The Ant AntProject's name. Default is ''
     def name
       return @project.getName
     end
-    
+
     #The Ant AntProject's basedir. Default is '.'
     def basedir
       return @project.base_dir.absolute_path;
     end
-    
+
     #Displays the Class name followed by the AntProject name
     # -e.g.  AntProject[BigCoProject]
     def to_s
       return self.class.name + "[#{name}]"
-    end 
-    
+    end
+
   end
 end
