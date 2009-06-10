@@ -11,7 +11,7 @@ More information will be provided asap.
 
 == INSTALL
 
-   gem install raw (not available now. Will be announced soon)
+   gem install malagant-raw
 
 == LICENSE
 

@@ -15,10 +15,9 @@ Gem::Specification.new do |s|
   s.homepage = %q{http://kenai.com/projects/raw}
   s.rdoc_options = ["--main", "README.txt"]
   s.require_paths = ["lib"]
-  s.rubyforge_project = %q{caldersphere}
   s.rubygems_version = %q{1.3.1}
-  s.summary = %q{Warbler chirpily constructs .war files of your Rails applications.}
-  s.test_files = ["spec/raw/config_spec.rb", "spec/raw/gems_spec.rb", "spec/raw/task_spec.rb"]
+  s.summary = %q{RAW is a Ruby ANT Wrapper for describing Apache ANT tasks in ruby instead of XML.}
+  s.test_files = ["spec/javaadapter_spec.rb", "spec/raw_antproject_spec.rb", "spec/raw/task_spec.rb"]
 
   if s.respond_to? :specification_version then
     current_version = Gem::Specification::CURRENT_SPECIFICATION_VERSION
