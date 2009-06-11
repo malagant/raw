@@ -1,3 +1,3 @@
-#!/usr/bin/env ruby
-require 'lib/raw_runner'
+#!/usr/bin/env jruby
+require '../lib/raw_runner'
 

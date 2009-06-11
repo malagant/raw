@@ -2,6 +2,7 @@ $LOAD_PATH.push(File.dirname(__FILE__) + '/../lib')
 
 require 'open-uri'
 require 'fileutils'
+require 'optparse'
 require 'raw'
 
 module RAW
@@ -68,10 +69,6 @@ module RAW
       name.gsub('.', '_')
     end
 
-    def self.parse!(args=ARGV)
-      RawRunner.new(args[0], args[1], args[2])
-    end
-
 
     def load_script(template)
       begin
@@ -92,6 +89,65 @@ module RAW
       block.call
     end
   end
+
+  class RawTool
+    def parse!(args)
+      if args.length == 0
+        puts options
+      elsif args.length == 1 && args[0] == ('-h' || '--help')
+        options.parse!(args)
+      else
+        general, sub = split_args(args)
+        options.parse!(args)
+
+        if general.empty?
+          puts options
+        else
+          @root_dir = '.' if @root_dir.nil?
+          RawRunner.new(general[0], @root_dir, {})
+        end
+      end
+    end
+
+    def split_args(args)
+      left = []
+      while args[0] and args[0] =~ /^-/ do
+        left << args.shift
+      end
+      left << args.shift if args[0]
+      return [left, args]
+    end
+
+    def self.parse!(args=ARGV)
+      RawTool.new.parse!(args)
+    end
+
+    # Options and how they are used
+    def options
+      OptionParser.new do |o|
+        o.set_summary_indent('  ')
+        o.banner =    "Usage: raw raw-script-url [OPTIONS]"
+        o.define_head "Ruby ANT Wrapper (RAW)."
+
+        o.separator ""
+        o.separator "GENERAL OPTIONS"
+
+        o.on("-v", "--verbose", "Turn on verbose ant output.") { |verbose| $verbose = verbose }
+        o.on("-h", "--help", "Show this help message.") { puts o; exit }
+        o.on("-r", "--root directory", "Set the root path of the script. Defaults to '.'") { |root| @root_dir = root}
+        o.on("-l", "--loglevel level", "Set the log level. Default is info. Possible values are: error, warn, info, debug") { |level| @loglevel = level}
+
+        o.separator ""
+        o.separator "EXAMPLES"
+        o.separator "  run example script:"
+        o.separator "    raw scripts/ant.rb -r ../.. -v \n"
+        o.separator "  Run a raw-script from a pastie URL:"
+        o.separator "    raw http://www.pastie.org/508302 -r ../.. -v -l debug \n"
+        o.separator "  Run a script without parameters:"
+        o.separator "    raw ant.rb\n"
+      end
+    end
+  end
 end
 
-RAW::RawRunner.parse!
+RAW::RawTool.parse!
