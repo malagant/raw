@@ -9,15 +9,15 @@ Gem::Specification.new do |s|
   s.description = %q{RAW is a Ruby ANT Wrapper for describing Apache ANT tasks in ruby instead of XML.}
   s.email = %q{mjohann@rails-experts.com}
   s.executables = ["raw"]
-  s.extra_rdoc_files = ["History.txt", "Manifest.txt", "README.txt", "LICENSES.txt"]
-  s.files = ["History.txt", "Manifest.txt", "README.txt", "LICENSES.txt", "Rakefile", "web.xml.erb", "bin/warble", "generators/warble", "generators/warble/templates", "generators/warble/templates/warble.rb", "generators/warble/warble_generator.rb", "lib/jruby-complete-1.3.0RC1.jar", "lib/jruby-rack-0.9.4.jar", "lib/warbler", "lib/warbler/config.rb", "lib/warbler/gems.rb", "lib/warbler/task.rb", "lib/warbler/version.rb", "lib/warbler.rb", "spec/sample/app/controllers/application.rb", "spec/sample/app/helpers/application_helper.rb", "spec/sample/config/boot.rb", "spec/sample/config/environment.rb", "spec/sample/config/environments/development.rb", "spec/sample/config/environments/production.rb", "spec/sample/config/environments/test.rb", "spec/sample/config/initializers/inflections.rb", "spec/sample/config/initializers/mime_types.rb", "spec/sample/config/initializers/new_rails_defaults.rb", "spec/sample/config/routes.rb", "spec/spec_helper.rb", "spec/warbler/config_spec.rb", "spec/warbler/gems_spec.rb", "spec/warbler/task_spec.rb", "tasks/warbler.rake"]
+  s.extra_rdoc_files = ["History.txt", "Manifest.txt", "README.txt", "LICENSE"]
+  s.files = ["History.txt", "Manifest.txt", "README.txt", "LICENSE", "Rakefile", "bin/raw", "lib/ant_libraries.rb", "lib/ant_project.rb", "lib/ant_task.rb", "lib/raw.rb", "lib/raw_runner.rb", "lib/rjb_adapter.rb", "lib/raw_utilities.rb", "spec/javaadapter_spec.rb", "spec/raw_antproject_spec.rb", "spec/spec_helper.rb"]
   s.has_rdoc = true
   s.homepage = %q{http://kenai.com/projects/raw}
   s.rdoc_options = ["--main", "README.txt"]
   s.require_paths = ["lib"]
   s.rubygems_version = %q{1.3.1}
   s.summary = %q{RAW is a Ruby ANT Wrapper for describing Apache ANT tasks in ruby instead of XML.}
-  s.test_files = ["spec/javaadapter_spec.rb", "spec/raw_antproject_spec.rb", "spec/raw/task_spec.rb"]
+  s.test_files = ["spec/javaadapter_spec.rb", "spec/raw_antproject_spec.rb"]
 
   if s.respond_to? :specification_version then
     current_version = Gem::Specification::CURRENT_SPECIFICATION_VERSION
