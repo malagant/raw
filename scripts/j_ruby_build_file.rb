@@ -1,5 +1,5 @@
-RESOURCE_DIR = File.join(FileUtils::pwd, 'spec', 'resources')
-ANT_HOME = File.join(RESOURCE_DIR, 'apache-ant-1.7.1')
+RESOURCE_DIR = File.join(FileUtils::pwd, '../spec/resources')
+ANT_HOME = ENV['ANT_HOME'] || File.join(RESOURCE_DIR, 'apache-ant-1.7.1')
 
 RAW::RAWClassLoader.load_ant_libs ANT_HOME
 
@@ -121,7 +121,7 @@ end
 #    </target>
 target :extract_rdocs, :depends => :init, :unless => "docsNotNeeded" do
   build :init
-  logger.info "*** '#{@rdoc_archive}' basedir = #{basedir}"
+  logger.debug "*** '#{@rdoc_archive}' basedir = #{basedir}"
   untar(:src => "#{@rdoc_archive}", :dest => basedir, :compression => 'gzip')
 end
 

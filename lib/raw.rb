@@ -12,7 +12,6 @@
 require 'raw_utilities'
 require 'ant_project'
 require 'ant_task'
-require 'raw_runner'
 require 'fileutils'
 
 module RAW
