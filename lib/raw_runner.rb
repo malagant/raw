@@ -51,9 +51,14 @@ module RAW
     end
 
     def build_instance_variable(prop)
+      begin
       instance_variable = "@#{instvar(prop[0])} = '#{prop[1]}'"
       self.instance_eval instance_variable
       logger.debug instance_variable
+      rescue SyntaxError => e
+        logger.error "Problem with #{instance_variable}. Cannot create valid instance variable."
+        raise e
+      end
     end
 
     def build_properties
@@ -66,7 +71,8 @@ module RAW
     end
 
     def instvar(name)
-      name.gsub('.', '_')
+      name = name.gsub('.', '_')
+      name.gsub('-', '_')
     end
 
 
