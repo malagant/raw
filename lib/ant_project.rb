@@ -14,7 +14,6 @@ module RAW
   class AntProject
     require 'logger'
     require 'ant_task'
-    require 'ant_libraries'
 
     private
     @@classes_loaded = false
@@ -29,10 +28,10 @@ module RAW
       @project.init
 
       if options[:declarative] == nil
-        @logger.debug("declarative is nil")
+        logger.debug("declarative is nil")
         self.declarative= true
       else
-        @logger.debug("declarative is #{options[:declarative]}")
+        logger.debug("declarative is #{options[:declarative]}")
         self.declarative= options[:declarative]
       end
 
@@ -77,7 +76,7 @@ module RAW
     def initialize(options = Hash.new)
 
       @logger = options[:logger] || Logger.new(STDOUT)
-      @logger.level = options[:loglevel] || Logger::ERROR
+      @logger.level = $loglevel || Logger::ERROR
 
       if (!@@classes_loaded && options[:ant_home])
         @logger.debug("loading ant jar files. ANT_HOME: #{options[:ant_home]}")
@@ -94,6 +93,36 @@ module RAW
       @task_stack = Array.new
     end
 
+    def property_value(name)
+      project.get_property(name)
+    end
+
+    def build_instance_variable(prop)
+      begin
+      instance_variable = "@#{instvar(prop[0])} = '#{prop[1]}'"
+      self.instance_eval instance_variable
+      logger.debug instance_variable
+      rescue SyntaxError => e
+        logger.error "Problem with #{instance_variable}. Cannot create valid instance variable."
+        raise e
+      end
+    end
+
+    def build_properties
+      project.properties.each do |prop|
+        build_instance_variable(prop)
+      end
+      logger.debug instance_variables
+      # TODO: Hack
+      @ant_version = RAW::ApacheAnt::Main.ant_version[/\d\.\d\.\d/].to_f
+    end
+
+    def instvar(name)
+      name = name.gsub('.', '_')
+      name.gsub('-', '_')
+    end
+
+    
     def method_missing(sym, *args)
       begin
         task = AntTask.new(sym.to_s, self, args[0])

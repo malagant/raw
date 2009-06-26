@@ -9,9 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
 # See the License for the specific language governing permissions and limitations 
 # under the License.
+require 'rubygems'
 require 'raw_utilities'
 require 'ant_project'
-require 'ant_task'
 require 'fileutils'
 
 module RAW

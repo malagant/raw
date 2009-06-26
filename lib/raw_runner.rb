@@ -14,7 +14,7 @@ module RAW
       super(options)
       @targets = Hash.new
       logger = options[:logger] || Logger.new(STDOUT)
-      @logger.level = options[:loglevel] || Logger::INFO
+      @logger.level = $loglevel || Logger::INFO
       @root = File.expand_path(File.directory?(root) ? root : File.join(Dir.pwd, root))
 
       if template
@@ -44,35 +44,6 @@ module RAW
         logger.debug options.inspect
         raise "No name or file attribute given for property!"
       end
-    end
-
-    def property_value(name)
-      project.get_property(name)
-    end
-
-    def build_instance_variable(prop)
-      begin
-      instance_variable = "@#{instvar(prop[0])} = '#{prop[1]}'"
-      self.instance_eval instance_variable
-      logger.debug instance_variable
-      rescue SyntaxError => e
-        logger.error "Problem with #{instance_variable}. Cannot create valid instance variable."
-        raise e
-      end
-    end
-
-    def build_properties
-      project.properties.each do |prop|
-        build_instance_variable(prop)
-      end
-      logger.debug instance_variables
-      # TODO: Hack
-      @ant_version = RAW::ApacheAnt::Main.ant_version[/\d\.\d\.\d/].to_f
-    end
-
-    def instvar(name)
-      name = name.gsub('.', '_')
-      name.gsub('-', '_')
     end
 
 
@@ -128,6 +99,21 @@ module RAW
       RawTool.new.parse!(args)
     end
 
+    def get_loglevel(level)
+      case level
+        when 'debug'
+          Logger::DEBUG
+        when 'info'
+          Logger::INFO
+        when 'warn'
+          Logger::WARN
+        when 'error'
+          Logger::ERROR
+        when 'fatal'
+          Logger::FATAL
+      end
+    end
+
     # Options and how they are used
     def options
       OptionParser.new do |o|
@@ -140,9 +126,9 @@ module RAW
 
         o.on("-v", "--verbose", "Turn on verbose ant output.") { |verbose| $verbose = verbose }
         o.on("-h", "--help", "Show this help message.") { puts o; exit }
-        o.on("-r", "--root directory", "Set the root path of the script. Defaults to '.'") { |root| @root_dir = root}
-        o.on("-l", "--loglevel level", "Set the log level. Default is info. Possible values are: error, warn, info, debug") { |level| @loglevel = level}
-
+        o.on("-r", "--root directory", "Set the root path of the script. Defaults to '.'") { |root| $root_dir = root}
+        o.on("-l", "--loglevel level", "Set the log level. Default is info. Possible values are: error, warn, info, debug") { |level| $loglevel = get_loglevel(level)}
+        puts "loglevel = #{$loglevel}"
         o.separator ""
         o.separator "EXAMPLES"
         o.separator "  run example script:"
@@ -156,4 +142,7 @@ module RAW
   end
 end
 
+#Kernel::set_trace_func  proc { |event, file, line, id, binding, classname|
+#       printf "%8s %s:%-2d %10s %8s\n", event, file, line, id, classname
+#    }
 RAW::RawTool.parse!

@@ -6,8 +6,6 @@ RAW::RAWClassLoader.load_ant_libs ANT_HOME
 
 init_project :basedir => '/Users/mjohann/projects/jruby_raw',
              :name => 'JRuby',
-             :logger => Logger.new(STDOUT),
-             :loglevel => Logger::INFO,
              :default => 'jar',
              :anthome => ANT_HOME
 
@@ -116,9 +114,11 @@ end
 #    </target>
 target :extract_rdocs, :depends => :init, :unless => "docsNotNeeded" do
   build :init
-  #logger.debug "*** '#{@rdoc_archive}' basedir = #{basedir}"
-  untar(:src => "#{@rdoc_archive}", :dest => basedir, :compression => 'gzip')
-  touch(:file => "#{basedir}/share/ri/1.8/system/created.rid")
+  unless @docsNotNeeded
+    logger.debug "*** '#{@rdoc_archive}' basedir = #{basedir}"
+    untar(:src => "#{@rdoc_archive}", :dest => basedir, :compression => 'gzip')
+    touch(:file => "#{basedir}/share/ri/1.8/system/created.rid")
+  end
 end
 
 #    <!-- Creates the directories needed for building -->
@@ -593,47 +593,47 @@ target :jar_jruby_dist, :unless => "jar-up-to-date" do
   build :generate_unsafe
   # TODO  <antcall target="_update_scm_revision_"/>
 
-    taskdef :name => "jarjar", :classname => "com.tonicsystems.jarjar.JarJarTask",
-            :classpath => "#{@build_lib_dir}/jarjar-1.0rc8.jar"
-    jarjar :destfile => "#{@lib_dir}/jruby.jar", :compress => true do
-      fileset :dir => "#{@jruby_classes_dir}"
-      zipfileset :src => "#{@build_lib_dir}/asm-3.1.jar"
-      zipfileset :src => "#{@build_lib_dir}/asm-commons-3.1.jar"
-      zipfileset :src => "#{@build_lib_dir}/asm-util-3.1.jar"
-      zipfileset :src => "#{@build_lib_dir}/asm-analysis-3.1.jar"
-      zipfileset :src => "#{@build_lib_dir}/asm-tree-3.1.jar"
-      zipfileset :src => "#{@build_lib_dir}/constantine.jar"
-      zipfileset :src => "#{@build_lib_dir}/bytelist.jar"
-      zipfileset :src => "#{@build_lib_dir}/jvyamlb-0.2.5.jar"
-      zipfileset :src => "#{@build_lib_dir}/jline-0.9.93.jar"
-      zipfileset :src => "#{@build_lib_dir}/jcodings.jar"
-      zipfileset :src => "#{@build_lib_dir}/joni.jar"
-      zipfileset :src => "#{@build_lib_dir}/jna-posix.jar"
-      zipfileset :src => "#{@build_lib_dir}/jna.jar"
-      zipfileset :src => "#{@build_lib_dir}/jffi.jar"
-      zipfileset :src => "#{@build_lib_dir}/jffi-i386-Linux.jar"
-     # zipfileset :src => "#{@build_lib_dir}/jffi-amd64-Linux.jar"
-      zipfileset :src => "#{@build_lib_dir}/jffi-Darwin.jar"
-     # zipfileset :src => "#{@build_lib_dir}/jffi-x86-SunOS.jar"
-     # zipfileset :src => "#{@build_lib_dir}/jffi-amd64-SunOS.jar"
-     # zipfileset :src => "#{@build_lib_dir}/jffi-ppc-AIX.jar"
-     # zipfileset :src => "#{@build_lib_dir}/jffi-sparc-SunOS.jar"
-      zipfileset :src => "#{@build_lib_dir}/jffi-sparcv9-SunOS.jar"
-      zipfileset :src => "#{@build_lib_dir}/joda-time-1.5.1.jar"
-      zipfileset :src => "#{@build_lib_dir}/dynalang-0.3.jar"
-      zipfileset :src => "#{@build_lib_dir}/yydebug.jar"
-      zipfileset :src => "#{@build_lib_dir}/nailgun-0.7.1.jar"
-      manifest do
-        attribute :name => "Built-By", :value => @user_name
-        attribute :name => "Main-Class", :value => "org.jruby.Main"
-      end
-      rule :pattern => "org.objectweb.asm.**", :result => "jruby.objectweb.asm.@1"
+  taskdef :name => "jarjar", :classname => "com.tonicsystems.jarjar.JarJarTask",
+          :classpath => "#{@build_lib_dir}/jarjar-1.0rc8.jar"
+  jarjar :destfile => "#{@lib_dir}/jruby.jar", :compress => true do
+    fileset :dir => "#{@jruby_classes_dir}"
+    zipfileset :src => "#{@build_lib_dir}/asm-3.1.jar"
+    zipfileset :src => "#{@build_lib_dir}/asm-commons-3.1.jar"
+    zipfileset :src => "#{@build_lib_dir}/asm-util-3.1.jar"
+    zipfileset :src => "#{@build_lib_dir}/asm-analysis-3.1.jar"
+    zipfileset :src => "#{@build_lib_dir}/asm-tree-3.1.jar"
+    zipfileset :src => "#{@build_lib_dir}/constantine.jar"
+    zipfileset :src => "#{@build_lib_dir}/bytelist.jar"
+    zipfileset :src => "#{@build_lib_dir}/jvyamlb-0.2.5.jar"
+    zipfileset :src => "#{@build_lib_dir}/jline-0.9.93.jar"
+    zipfileset :src => "#{@build_lib_dir}/jcodings.jar"
+    zipfileset :src => "#{@build_lib_dir}/joni.jar"
+    zipfileset :src => "#{@build_lib_dir}/jna-posix.jar"
+    zipfileset :src => "#{@build_lib_dir}/jna.jar"
+    zipfileset :src => "#{@build_lib_dir}/jffi.jar"
+    zipfileset :src => "#{@build_lib_dir}/jffi-i386-Linux.jar"
+    # zipfileset :src => "#{@build_lib_dir}/jffi-amd64-Linux.jar"
+    zipfileset :src => "#{@build_lib_dir}/jffi-Darwin.jar"
+    # zipfileset :src => "#{@build_lib_dir}/jffi-x86-SunOS.jar"
+    # zipfileset :src => "#{@build_lib_dir}/jffi-amd64-SunOS.jar"
+    # zipfileset :src => "#{@build_lib_dir}/jffi-ppc-AIX.jar"
+    # zipfileset :src => "#{@build_lib_dir}/jffi-sparc-SunOS.jar"
+    zipfileset :src => "#{@build_lib_dir}/jffi-sparcv9-SunOS.jar"
+    zipfileset :src => "#{@build_lib_dir}/joda-time-1.5.1.jar"
+    zipfileset :src => "#{@build_lib_dir}/dynalang-0.3.jar"
+    zipfileset :src => "#{@build_lib_dir}/yydebug.jar"
+    zipfileset :src => "#{@build_lib_dir}/nailgun-0.7.1.jar"
+    manifest do
+      attribute :name => "Built-By", :value => @user_name
+      attribute :name => "Main-Class", :value => "org.jruby.Main"
     end
-    # TODO antcall enabling blocks
-    #antcall :target => :_osgify_jar_ do
-    #  param :name => "bndfile", :value => "jruby.bnd"
-    #  param :name => "jar_wrap", :value => "@lib_dir/jruby.jar"
-    #end
+    rule :pattern => "org.objectweb.asm.**", :result => "jruby.objectweb.asm.@1"
+  end
+  # TODO antcall enabling blocks
+  #antcall :target => :_osgify_jar_ do
+  #  param :name => "bndfile", :value => "jruby.bnd"
+  #  param :name => "jar_wrap", :value => "@lib_dir/jruby.jar"
+  #end
 end
 #<!-- Use Bnd to wrap the JAR generated by jarjar in above task -->
 #<target name="_osgify-jar_">
@@ -653,12 +653,12 @@ target :_osgify_jar_ do |bndfile, jar_wrap|
   filter :token => "JRUBY_VERSION", :value => @version_jruby
   copy :file => "#{basedir}/jruby.bnd.template", :tofile => "#{@build_dir}/#{bndfile}", :filtering => true
   taskdef :resource => "aQute/bnd/ant/taskdef.properties",
-    :classpath => "#{@build_lib_dir}/bnd-0.0.249.jar"
+          :classpath => "#{@build_lib_dir}/bnd-0.0.249.jar"
   bndwrap :definitions => @build_dir, :output => @dest_lib_dir do
     fileset :file => jar_wrap
   end
   move :file => @jar_wrap, :tofile => @jar_wrap,
-    :overwrite => true 
+       :overwrite => true
 end
 
 #<target name="create-apidocs" depends="prepare"
@@ -1023,8 +1023,8 @@ property :name => "nailgun.home", :value => "#{basedir}/tool/nailgun"
 
 # Execute
 #build :_gu_internal_
-build :jar_complete
+#build :jar_complete
 #build :clean
-#build :prepare
+build :extract_rdocs
 #build :compile
 

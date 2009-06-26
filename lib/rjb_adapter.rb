@@ -16,7 +16,7 @@ module RAW
     # If true we will use JRuby
     # If false we will use Rjb gem
     def is_jruby?
-      return RUBY_PLATFORM == 'java'
+      return Gem.ruby =~ /jruby/
     end
 
     # Wrapper for import_class from JRuby
