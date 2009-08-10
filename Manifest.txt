@@ -1,5 +1,5 @@
 History.txt
 Manifest.txt
-README.txt
+README
 Rakefile
 bin/raw

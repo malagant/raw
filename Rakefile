@@ -20,7 +20,7 @@ def apply_default_hoe_properties(hoe)
   hoe.remote_rdoc_dir = ''
   hoe.rubyforge_name = 'raw'
   hoe.author = 'Michael Johann'
-  hoe.email = 'malagant1969@gmail.com'
+  hoe.email = 'malagant1969@googlemail.com'
   hoe.url = 'http://kenai.com/projects/raw/'
   hoe.summary = 'A Ruby module that wraps the Apache Ant build tool. 
                  RAW can be used to invoke Ant Tasks from a Ruby or a JRuby script.'
@@ -41,9 +41,4 @@ end
 Hoe.new('raw', RAW::VERSION) do |hoe|
   apply_default_hoe_properties hoe
   hoe.spec_extras = { :platform => 'java' }
-end
-
-Rake::TestTask.new('test') do |t|
-  t.ruby_opts = ['-r test/load_devcreek.rb']
-  t.test_files = ['test/*test.rb']
 end
