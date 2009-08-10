@@ -21,7 +21,7 @@ module RAW
     public
     # getter and setter for the project instance,
     # the logger, the declarative and the attribute ant_version
-    attr_accessor :project, :logger, :ant_version, :declarative
+    attr_accessor :project, :logger, :ant_version, :declarative, :default_target
 
     # Create an AntProject. Parameters are specified via a hash:
     # :ant_home => <em>Ant basedir</em>
@@ -67,6 +67,8 @@ module RAW
       # The project's base directory taken from the options hash or the current working directory
       @project.basedir = options[:basedir] || FileUtils::pwd
       # intializing the ANT project
+      @default_target = options[:default] if options[:default]
+      logger.debug "Default == #{options[:default]}"
       @project.init
 
       # Sets the task definitions to be declared only or they get executed directly

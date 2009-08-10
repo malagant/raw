@@ -27,13 +27,21 @@ module RAW
       @root = File.expand_path(File.directory?(root) ? root : File.join(Dir.pwd, root))
 
       if template
-        logger.info("applying script #{template}")
+        logger.info("Applying script #{template}")
 
         load_script(template)
 
-        logger.info"applied script #{template}"
+        # Execute the given target
+        if options[:target]
+          build options[:target]
+        # or find the default and call that 
+        elsif @default_target
+          build @default_target.to_sym
+        end
+
+        logger.info"Applied script #{template}"
       else
-        logger.info"no script applied#{template}"
+        logger.info"No script #{template} applied."
       end
     end
 
@@ -88,6 +96,7 @@ module RAW
 
     def build(task)
       block = targets[task]
+      raise "No target named #{task} found." unless block
       block.call
     end
   end
@@ -107,7 +116,7 @@ module RAW
           puts options
         else
           @root_dir = '.' if @root_dir.nil?
-          RawRunner.new(general[0], @root_dir, {:loglevel => @loglevel})
+          RawRunner.new(general[0], @root_dir, {:loglevel => @loglevel, :target => @target})
         end
       end
     end
@@ -128,15 +137,15 @@ module RAW
     def loglevel(level)
       case level
         when 'debug'
-         Logger::DEBUG
+          Logger::DEBUG
         when 'info'
-         Logger::INFO
+          Logger::INFO
         when 'warn'
-         Logger::WARN
+          Logger::WARN
         when 'error'
-         Logger::ERROR
+          Logger::ERROR
         when 'fatal'
-         Logger::FATAL
+          Logger::FATAL
       end
     end
 
@@ -154,6 +163,7 @@ module RAW
         o.on("-h", "--help", "Show this help message.") { puts o; exit }
         o.on("-r", "--root directory", "Set the root path of the script. Defaults to '.'") { |root| $root_dir = root}
         o.on("-l", "--loglevel level", "Set the log level. Default is info. Possible values are: error, warn, info, debug") { |level| @loglevel = loglevel(level)}
+        o.on("-t", "--target target", "Target to execute with ANT") { |target| @target = target.to_sym}
         o.separator ""
         o.separator "EXAMPLES"
         o.separator "  run example script:"

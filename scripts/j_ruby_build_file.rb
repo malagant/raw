@@ -1,13 +1,6 @@
-RESOURCE_DIR = File.join(FileUtils::pwd, '../spec/resources')
-#ANT_HOME = ENV['ANT_HOME'] || File.join(RESOURCE_DIR, 'apache-ant-1.7.1')
-
-
-#logger.info "ANT_HOME = #{ANT_HOME}"
-
 init_project :basedir => '/Users/mjohann/projects/jruby_raw',
              :name => 'JRuby',
-             :default => 'jar'#,
-             #:anthome => ANT_HOME
+             :default => 'jar'
 
 property(:name => 'base.dir', :location => project.get_property('basedir'))
 
@@ -32,8 +25,6 @@ build_properties
 property :name => "rspec.gem", :value => "rspec-1.2.6.gem"
 property :name => "rake.gem", :value => "rake-0.8.7.gem"
 
-@resource_dir = RESOURCE_DIR
-#@ant_home = ANT_HOME
 @jruby_src = "/Users/mjohann/projects/jruby_raw"
 @build_lib_dir = @jruby_src + "/" + property_value('build.lib.dir')
 
@@ -1018,15 +1009,3 @@ target :clean_all do # Cleans everything, including downloaded specs
 end
 # <property name="nailgun.home" value="${basedir}/tool/nailgun"/>
 property :name => "nailgun.home", :value => "#{basedir}/tool/nailgun"
-
-
-
-#puts "Yeah #{RAW::ApacheAnt::Main.ant_version[/\d.\d.\d./]}"
-
-# Execute
-#build :_gu_internal_
-#build :jar_complete
-#build :clean
-build :jar
-#build :compile
-
