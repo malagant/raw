@@ -128,8 +128,8 @@ module RAW
       variable = wrapper.attributeMap.get('property')
 
       if variable
-        puts "creating variable = @#{variable} with value #{@project_wrapper.property_value(variable.to_s)}"
-        unless @project_wrapper.instance_variable_defined?variable
+        logger.debug "creating variable = @#{variable} with value #{@project_wrapper.property_value(variable.to_s)}"
+        unless @project_wrapper.instance_variable_defined? "@#{variable.to_s}".to_sym
           instance_eval <<-END
             @project_wrapper.instance_variable_set(:@#{@project_wrapper.instvar(variable)}, @project_wrapper.property_value(variable.to_s))
           END

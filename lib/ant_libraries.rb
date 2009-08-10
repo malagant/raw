@@ -12,20 +12,24 @@
 require 'rjb_adapter'
 
 module RAW
+  # Defining some Java classes for building the ant tasks etc
   module ApacheAnt
+    # The default logger
     DefaultLogger = RjbAdapter.import_class("org.apache.tools.ant.DefaultLogger")
+    # The main class from Apache ANT
     Main = RjbAdapter.import_class("org.apache.tools.ant.Main")
+    # The ANT project class
     Project = RjbAdapter.import_class("org.apache.tools.ant.Project")
+    # The ANT RuntimeConfigurable
     RuntimeConfigurable = RjbAdapter.import_class("org.apache.tools.ant.RuntimeConfigurable")
+    # The ANT target class
     Target = RjbAdapter.import_class("org.apache.tools.ant.Target")
+    # ANT's class for dynamically wrapping taks
     UnknownElement = RjbAdapter.import_class("org.apache.tools.ant.UnknownElement")
   end
   
   module JavaLang
+    # Java's System class for access to System.out and System.err
     System = RjbAdapter.import_class("java.lang.System")
-  end
-  
-  module XmlSax
-    AttributeListImpl = RjbAdapter.import_class("org.xml.sax.helpers.AttributeListImpl")
   end
 end

@@ -15,80 +15,87 @@ module RAW
     require 'logger'
     require 'ant_task'
 
-    private
     @@classes_loaded = false
 
-    # This is for further initializations inside the constructor
-    def init_project(options)
-
-      @project = RAW::ApacheAnt::Project.new
-      @project.name = options[:name] || ''
-      @project.default = ''
-      @project.basedir = options[:basedir] || FileUtils::pwd
-      @project.init
-
-      if options[:declarative] == nil
-        logger.debug("declarative is nil")
-        self.declarative= true
-      else
-        logger.debug("declarative is #{options[:declarative]}")
-        self.declarative= options[:declarative]
-      end
-
-      default_logger = ApacheAnt::DefaultLogger.new
-      default_logger.message_output_level = 2
-      default_logger.output_print_stream = options[:outputstr] || JavaLang::System.out
-      default_logger.error_print_stream = options[:errorstr] || JavaLang::System.err
-      default_logger.emacs_mode = false
-
-      @project.add_build_listener(default_logger)
-    end
-
+    # Here we go: Let's define some attributes
     public
-    attr :project
-    attr :ant_version
-    attr_accessor(:declarative, :logger)
+    # getter and setter for the project instance,
+    # the logger, the declarative and the attribute ant_version
+    attr_accessor :project, :logger, :ant_version, :declarative
 
     # Create an AntProject. Parameters are specified via a hash:
-    # :ant_home=><em>Ant basedir</em>
+    # :ant_home => <em>Ant basedir</em>
     #   -A String indicating the location of the ANT_HOME directory. If provided, RAW will
-    #   load the classes from the ANT_HOME/lib dir. If ant_home is not provided, the Ant jar files
-    #   must be available in the CLASSPATH.   
-    # :name=><em>project_name</em>
+    #   load the classes from the ANT_HOME/lib dir. If ant_home is not provided, the ANT jar files
+    #   must be available on the CLASSPATH.
+    # :name => <em>project_name</em>
     #   -A String indicating the name of this project.
-    # :basedir=><em>project_basedir</em>
-    #   -A String indicating the basedir of this project. Corresponds to the 'basedir' attribute 
-    #   on an Ant project.  
-    # :declarative=><em>declarative_mode</em>
-    #   -A boolean value indicating wether Ant tasks created by this project instance should 
-    #   have their execute() method invoked during their creation. For example, with 
-    #   the option :declarative=>true the following task would execute; 
+    # :basedir => <em>project_basedir</em>
+    #   -A String indicating the basedir of this project. Corresponds to the 'basedir' attribute
+    #   on an Ant project.
+    # :declarative => <em>declarative_mode</em>
+    #   -A boolean value indicating wether ANT tasks created by this project instance should
+    #   have their execute() method invoked during their creation. For example, with
+    #   the option :declarative => <em>true</em> the following task would execute;
     #   @antProject.echo(:message => "An Echo Task")
-    #   However, with the option :declarative=>false, the programmer is required to execute the 
-    #   task explicitly; 
+    #   However, with the option :declarative => false, the programmer is required to execute the
+    #   task explicitly;
     #   echoTask = @antProject.echo(:message => "An Echo Task")
     #   echoTask.execute()
     #   Default value is <em>true</em>.
-    # :logger=><em>Logger</em>
+    # :logger => <em>Logger</em>
     #   -A Logger instance. Defaults to Logger.new(STDOUT)
-    # :loglevel=><em>The level to set the logger to</em>
+    # :loglevel => <em>The level to set the logger to</em>
     #   -Defaults to Logger::ERROR
-    def initialize(options = Hash.new)
+    # This is for further initializations inside the constructor
+    # and must be called once from the users ANT script
+    # Example usage:
+    # init_project :basedir => '/Users/mjohann/projects/jruby_raw',
+    #         :name => 'JRuby',
+    #         :default => 'jar',
+    #         :anthome => ANT_HOME
+    def init_project(options)
+      # The ANT version used
+      logger.info RAW::ApacheAnt::Main.ant_version
+      @ant_version = RAW::ApacheAnt::Main.ant_version[/\d\.\d\.\d/].to_f
+      # instance of ANT project
+      @project = RAW::ApacheAnt::Project.new
+      # The default project name taken from the options hash or left blank
+      @project.name = options[:name] || ''
+      # The default ANT target taken from the options hash or left blank
+      @project.default = ''
+      # The project's base directory taken from the options hash or the current working directory
+      @project.basedir = options[:basedir] || FileUtils::pwd
+      # intializing the ANT project
+      @project.init
 
-      @logger = options[:logger] || Logger.new(STDOUT)
-      @logger.level = $loglevel || Logger::ERROR
-
-      if (!@@classes_loaded && options[:ant_home])
-        @logger.debug("loading ant jar files. ANT_HOME: #{options[:ant_home]}")
-        # Load all the jar files from ant
-        RAWClassLoader.load_ant_libs(options[:ant_home])
-        @@classes_loaded = true
+      # Sets the task definitions to be declared only or they get executed directly
+      # Default is true
+      unless options[:declarative]
+        logger.debug("declarative is nil")
+        self.declarative = true
+      else
+        logger.debug("declarative is #{options[:declarative]}")
+        self.declarative = options[:declarative]
       end
 
-      @logger.debug(RAW::ApacheAnt::Main.ant_version)
-      @ant_version = RAW::ApacheAnt::Main.ant_version[/\d\.\d\.\d/].to_f
+      # Here we setup the default logger instance
+      default_logger = ApacheAnt::DefaultLogger.new
+      default_logger.message_output_level = Logger::INFO
+      # Output is either Standard out or the stream in options hash
+      default_logger.output_print_stream = options[:outputstr] || JavaLang::System.out
+      default_logger.error_print_stream = options[:errorstr] || JavaLang::System.err
+      # Output will be like in log4j.properties configured
+      default_logger.emacs_mode = false
+      # Set the default logger as the build listener
+      @project.add_build_listener(default_logger)
+    end
 
-      init_project(options)
+    # Constructor will be called internally and consumes
+    # the options hash which can contain infos about a logger  
+    def initialize(options)
+      @logger = options[:logger] || Logger.new(STDOUT)
+      logger.level = options[:loglevel] || Logger::INFO
 
       @task_stack = Array.new
     end

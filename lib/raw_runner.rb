@@ -7,14 +7,11 @@ require 'raw'
 
 module RAW
   class RawRunner < RAW::AntProject
-    attr_reader :root
-    attr_writer :logger
+    attr_reader :root, :targets
 
     def initialize(template, root = '', options = {})
       super(options)
       @targets = Hash.new
-      logger = options[:logger] || Logger.new(STDOUT)
-      @logger.level = $loglevel || Logger::INFO
       @root = File.expand_path(File.directory?(root) ? root : File.join(Dir.pwd, root))
 
       if template
@@ -46,6 +43,22 @@ module RAW
       end
     end
 
+    def condition(options)
+      property = options[:property]
+      environment = options[:value]
+
+
+      if name
+        build_instance_variable([name, options[:location] || options[:value]])
+      elsif file || environment
+        build_properties
+      else
+        logger.debug options.inspect
+        raise "No name or file attribute given for property!"
+      end
+      method_missing(:property, options)
+    end
+
 
     def load_script(template)
       begin
@@ -58,15 +71,16 @@ module RAW
     end
 
     def target(name, depends = [], &block)
-      @targets[name] = block
+      targets[name] = block
     end
 
     def build(task)
-      block = @targets[task]
+      block = targets[task]
       block.call
     end
   end
 
+  # Handles the startup of RAW with parsing options etc.
   class RawTool
     def parse!(args)
       if args.length == 0
@@ -81,7 +95,7 @@ module RAW
           puts options
         else
           @root_dir = '.' if @root_dir.nil?
-          RawRunner.new(general[0], @root_dir, {})
+          RawRunner.new(general[0], @root_dir, {:loglevel => @loglevel})
         end
       end
     end
@@ -95,22 +109,22 @@ module RAW
       return [left, args]
     end
 
-    def self.parse!(args=ARGV)
+    def self.parse!(args = ARGV)
       RawTool.new.parse!(args)
     end
 
-    def get_loglevel(level)
+    def loglevel(level)
       case level
         when 'debug'
-          Logger::DEBUG
+         Logger::DEBUG
         when 'info'
-          Logger::INFO
+         Logger::INFO
         when 'warn'
-          Logger::WARN
+         Logger::WARN
         when 'error'
-          Logger::ERROR
+         Logger::ERROR
         when 'fatal'
-          Logger::FATAL
+         Logger::FATAL
       end
     end
 
@@ -127,8 +141,7 @@ module RAW
         o.on("-v", "--verbose", "Turn on verbose ant output.") { |verbose| $verbose = verbose }
         o.on("-h", "--help", "Show this help message.") { puts o; exit }
         o.on("-r", "--root directory", "Set the root path of the script. Defaults to '.'") { |root| $root_dir = root}
-        o.on("-l", "--loglevel level", "Set the log level. Default is info. Possible values are: error, warn, info, debug") { |level| $loglevel = get_loglevel(level)}
-        puts "loglevel = #{$loglevel}"
+        o.on("-l", "--loglevel level", "Set the log level. Default is info. Possible values are: error, warn, info, debug") { |level| @loglevel = loglevel(level)}
         o.separator ""
         o.separator "EXAMPLES"
         o.separator "  run example script:"
@@ -142,7 +155,4 @@ module RAW
   end
 end
 
-#Kernel::set_trace_func  proc { |event, file, line, id, binding, classname|
-#       printf "%8s %s:%-2d %10s %8s\n", event, file, line, id, classname
-#    }
 RAW::RawTool.parse!

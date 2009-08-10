@@ -1,13 +1,13 @@
 RESOURCE_DIR = File.join(FileUtils::pwd, '../spec/resources')
-ANT_HOME = ENV['ANT_HOME'] || File.join(RESOURCE_DIR, 'apache-ant-1.7.1')
+#ANT_HOME = ENV['ANT_HOME'] || File.join(RESOURCE_DIR, 'apache-ant-1.7.1')
 
-RAW::RAWClassLoader.load_ant_libs ANT_HOME
 
+#logger.info "ANT_HOME = #{ANT_HOME}"
 
 init_project :basedir => '/Users/mjohann/projects/jruby_raw',
              :name => 'JRuby',
-             :default => 'jar',
-             :anthome => ANT_HOME
+             :default => 'jar'#,
+             #:anthome => ANT_HOME
 
 property(:name => 'base.dir', :location => project.get_property('basedir'))
 
@@ -33,8 +33,8 @@ property :name => "rspec.gem", :value => "rspec-1.2.6.gem"
 property :name => "rake.gem", :value => "rake-0.8.7.gem"
 
 @resource_dir = RESOURCE_DIR
-@ant_home = ANT_HOME
-@jruby_src = @resource_dir + '/jruby-1.1.6'
+#@ant_home = ANT_HOME
+@jruby_src = "/Users/mjohann/projects/jruby_raw"
 @build_lib_dir = @jruby_src + "/" + property_value('build.lib.dir')
 
 
@@ -61,7 +61,7 @@ end
 # </patternset>
 patternset(:id => 'java.src.pattern') do
   include(:name => '**/*.java')
-  exclude(:unless => 'bsf.present', :name => 'org/jruby/javasupport/bsf/**/*.java')
+  exclude(:unless => 'bsf_present', :name => 'org/jruby/javasupport/bsf/**/*.java')
   exclude(:unless => 'sun-misc-signal', :name => '**/SunSignalFacade.java')
 end
 # <patternset id="ruby.src.pattern">
@@ -99,7 +99,7 @@ target :init do
   end
   property(:environment => "env")
   property(:name => 'version.ruby', :value => "#{property_value("version.ruby.major")}.#{property_value("version.ruby.minor")}")
-  condition(:property => 'ruby.home', :value => "#{@env_RUBY_HOME}") do
+  if property_value("ruby.home") == "#{@env_RUBY_HOME}"
     _not do |n|
       n.isset(:property => 'ruby.home')
     end
@@ -161,9 +161,9 @@ end
 target :check_for_optional_java4_packages do
   build :init
   available(:property => 'jdk1_5_plus', :classname => 'java.lang.StringBuilder')
-  available(:property => 'bsf.present', :classname => 'org.apache.bsf.BSFManager', :classpathref => 'build.classpath')
-  available(:property => 'junit.present', :classname => 'junit.framework.TestCase', :classpathref => 'build.classpath')
-  available(:property => 'cglib.present', :classname => 'net.sf.cglib.reflect.FastClass', :classpathref => 'build.classpath')
+  available(:property => 'bsf_present', :classname => 'org.apache.bsf.BSFManager', :classpathref => 'build.classpath')
+  available(:property => 'junit_present', :classname => 'junit.framework.TestCase', :classpathref => 'build.classpath')
+  available(:property => 'cglib_present', :classname => 'net.sf.cglib.reflect.FastClass', :classpathref => 'build.classpath')
 end
 
 #    <!-- Checks if specific libs and versions are avaiable -->
@@ -343,7 +343,7 @@ end
 #</target>
 target :generate_method_classes do
   build :compile
-  available(:file => 'src_gen/annotated_classes.txt', :property => 'annotations.changed')
+  available(:file => 'src_gen/annotated_classes.txt', :property => 'annotations_changed')
   build :_gmc_internal_ if @annotations_changed # TODO was antcall
 end
 #<target name="_gmc_internal_" if="annotations.changed">
@@ -384,7 +384,7 @@ target :_gmc_internal_, :if => 'annotations.changed' do
 
   echo :message => 'Compiling populators...'
 
-  _java(:destdir => @jruby_classes_dir,
+  javac(:destdir => @jruby_classes_dir,
         :debug => true,
         :source => @javac_version,
         :target => @javac_version,
@@ -404,7 +404,7 @@ end
 #</target>
 target :generate_unsafe do
   build :compile
-  available :file => @jruby_classes_dir + '/org/jruby/util/unsafe/GeneratedUnsafe.class', :property => 'unsafe.not.needed'
+  available :file => @jruby_classes_dir + '/org/jruby/util/unsafe/GeneratedUnsafe.class', :property => 'unsafe_not_needed'
   build :_gu_internal_
 end
 #<target name="_gu_internal_" unless="unsafe.not.needed">
@@ -419,15 +419,17 @@ end
 #      <arg value="${jruby.classes.dir}/org/jruby/util/unsafe"/>
 #  </java>
 #</target>
-target :_gu_internal_, :unless => [ 'unsafe.not.needed'] do
-  echo :message => 'Generating unsafe impl...'
-  _java(:classname => 'org.jruby.util.unsafe.UnsafeGenerator', :fork => true, :failonerror => true) do |j|
-    j.classpath :refid => 'build.classpath'
-    j.classpath :path => @jruby_classes_dir
-    # uncomment this line when building on a JVM with invokedynamic
-    # jvmarg :line => '-XX:+InvokeDynamic'
-    j.arg :value => 'org.jruby.util.unsafe'
-    j.arg :value => @jruby_classes_dir + '/org/jruby/util/unsafe'
+target :_gu_internal_ do
+  unless @unsafe_not_needed
+    echo :message => 'Generating unsafe impl...'
+    _java(:classname => 'org.jruby.util.unsafe.UnsafeGenerator', :fork => true, :failonerror => true) do |j|
+      j.classpath :refid => 'build.classpath'
+      j.classpath :path => @jruby_classes_dir
+      # uncomment this line when building on a JVM with invokedynamic
+      # jvmarg :line => '-XX:+InvokeDynamic'
+      j.arg :value => 'org.jruby.util.unsafe'
+      j.arg :value => @jruby_classes_dir + '/org/jruby/util/unsafe'
+    end
   end
 end
 
@@ -1025,6 +1027,6 @@ property :name => "nailgun.home", :value => "#{basedir}/tool/nailgun"
 #build :_gu_internal_
 #build :jar_complete
 #build :clean
-build :extract_rdocs
+build :jar
 #build :compile
 
