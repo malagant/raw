@@ -34,7 +34,7 @@ module RAW
         # Execute the given target
         if options[:target]
           build options[:target]
-        # or find the default and call that 
+          # or find the default and call that
         elsif @default_target
           build @default_target.to_sym
         end
@@ -90,13 +90,31 @@ module RAW
       end
     end
 
-    def target(name, depends = [], &block)
-      targets[name] = block
+    def target(name, options = {}, &block)
+      target = Target.new(name)
+      logger.debug("adding target #{name}")
+      if options[:depends]
+        if options[:depends].is_a? Symbol
+          options[:depends] = [options[:depends]]
+        end
+        options[:depends].each do |dependancy|
+          logger.debug "adding dependancy #{dependancy} to target #{name}"
+          target.dependencies << dependancy
+        end
+      end
+      target.block = block
+      targets[name] = target
     end
 
     def build(task)
-      block = targets[task]
+      block = nil
+      block = targets[task].block if targets[task]
       raise "No target named #{task} found." unless block
+      targets[task].dependencies.each do |dependency|
+        logger.debug("But calling target #{dependency} before")
+        build dependency
+      end
+      logger.info("Calling target #{task}")
       block.call
     end
   end

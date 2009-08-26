@@ -103,8 +103,7 @@ end
 #        <untar src="${rdoc.archive}" dest="${basedir}" compression="gzip"/>
 #        <touch file="${basedir}/share/ri/1.8/system/created.rid"/>
 #    </target>
-target :extract_rdocs, :depends => :init, :unless => "docsNotNeeded" do
-  build :init
+target :extract_rdocs, :depends => :init do
   unless @docsNotNeeded
     logger.debug "*** '#{@rdoc_archive}' basedir = #{basedir}"
     untar(:src => "#{@rdoc_archive}", :dest => basedir, :compression => 'gzip')
@@ -123,8 +122,7 @@ end
 #      <mkdir dir="${docs.dir}"/>
 #      <mkdir dir="${api.docs.dir}"/>
 #    </target>
-target :prepare  do
-  build :extract_rdocs
+target :prepare, :depends => :extract_rdocs  do
   mkdir :dir => @build_dir
   mkdir :dir => @classes_dir
   mkdir :dir => @jruby_classes_dir
@@ -992,8 +990,7 @@ end
 #  <delete dir="${api.docs.dir}"/>
 #  <delete dir="src_gen"/>
 #</target>
-target :clean do
-  build :init
+target :clean, :depends => :init do
   delete :dir => @build_dir
   delete :dir => @dist_dir
   delete :quiet => false do
@@ -1005,7 +1002,7 @@ end
 
 target :clean_all do # Cleans everything, including downloaded specs
   build :clean
-  build :clear_specs
+  #build :clear_specs
 end
 # <property name="nailgun.home" value="${basedir}/tool/nailgun"/>
 property :name => "nailgun.home", :value => "#{basedir}/tool/nailgun"

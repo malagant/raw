@@ -14,6 +14,7 @@ require 'rubygems'
 require 'raw_utilities'
 require 'ant_project'
 require 'fileutils'
+require 'target'
 
 module RAW
   # Loading modules of apache ant
@@ -23,5 +24,5 @@ module RAW
   # loads the XML-Sax parser
   autoload :XmlSax, 'ant_libraries.rb'
   # version of our gem
-  VERSION = "0.8.0"
+  VERSION = "0.8.2"
 end
