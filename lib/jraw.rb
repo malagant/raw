@@ -11,12 +11,12 @@
 # under the License.
 
 require 'rubygems'
-require 'raw_utilities'
+require 'jraw_utilities'
 require 'ant_project'
 require 'fileutils'
 require 'target'
 
-module RAW
+module JRAW
   # Loading modules of apache ant
   autoload :ApacheAnt, 'ant_libraries.rb'
   # Loads the class java.lang.System

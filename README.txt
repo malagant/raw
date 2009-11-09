@@ -1,17 +1,18 @@
-= About RAW
+= About JRAW
 
-RAW is a gem that provides a wrapper for ant.
-You can use RAW to write ant scripts in Ruby instead of XML.
+JRAW is a gem that provides a wrapper for ant.
+You can use JRAW to write ant scripts in Ruby instead of XML.
 
 More information will be provided asap.
+You can get initial support via malagant1969@googlemail.com (Michael Johann)
 
 == REQUIREMENTS
 
-   To use RAW you need JRuby oder the gem RJB (Ruby Java Bridge)
+   To use JRAW you need JRuby oder the gem RJB (Ruby Java Bridge)
 
 == INSTALL
 
-   gem install malagant-raw
+   gem install malagant-jraw
 
 == LICENSE
 

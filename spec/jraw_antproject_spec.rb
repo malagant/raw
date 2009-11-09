@@ -1,6 +1,6 @@
 require File.dirname(__FILE__) + '/spec_helper'
 
-describe RAW::RawRunner, 'initialized' do
+describe JRAW::JRawRunner, 'initialized' do
   before(:each) do
     # Defining the output directory for our specs
     @output_dir = File.join(FileUtils::pwd, 'tmp', 'output')
@@ -13,7 +13,7 @@ describe RAW::RawRunner, 'initialized' do
 
     # The properties for the new AntProject instance
     @ant_proj_props = {
-            :name => "rawTest",
+            :name => "jrawTest",
             :basedir => FileUtils::pwd,
             :declarative => true,
             :logger => Logger.new(STDOUT),
@@ -21,8 +21,8 @@ describe RAW::RawRunner, 'initialized' do
             :ant_home => @ant_home
     }
 
-    # Creating the new instance of RAW::AntProject
-    @ant = RAW::RawRunner.new(nil, '.', @ant_proj_props)
+    # Creating the new instance of JRAW::AntProject
+    @ant = JRAW::JRawRunner.new(nil, '.', @ant_proj_props)
 
     if File.exists?(@output_dir)
       FileUtils.remove_dir(@output_dir)
@@ -38,17 +38,17 @@ describe RAW::RawRunner, 'initialized' do
   end
 
   it "should be declarative" do
-    @ant = RAW::RawRunner.new({ :declarative => false,
+    @ant = JRAW::JRawRunner.new({ :declarative => false,
             :loglevel => Logger::DEBUG,
             :ant_home => @ant_home })
-    echo = @ant.echo :message => "RAW is really cool"
+    echo = @ant.echo :message => "JRAW is really cool"
     echo.should_not be_nil
 
-    @ant = RAW::RawRunner.new({ :declarative => true,
+    @ant = JRAW::JRawRunner.new({ :declarative => true,
             :loglevel => Logger::DEBUG,
             :ant_home => @ant_home })
 
-    echo = @ant.echo :message => "RAW is really cool"
+    echo = @ant.echo :message => "JRAW is really cool"
     echo.should be_nil
   end
 
@@ -139,7 +139,7 @@ describe RAW::RawRunner, 'initialized' do
   end
 
   it "should echo properly" do
-    msg = "RAW is running an echo task"                    
+    msg = "JRAW is running an echo task"                    
     @ant.echo(:message => msg, :level => 'info')
     @ant.echo(:message => 100000, :level => 'info')
     @ant.echo(:pcdata => 1000)

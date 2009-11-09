@@ -15,10 +15,10 @@ $LOAD_PATH.push(File.dirname(__FILE__) + '/../lib')
 require 'open-uri'
 require 'fileutils'
 require 'optparse'
-require 'raw'
+require 'jraw'
 
-module RAW
-  class RawRunner < RAW::AntProject
+module JRAW
+  class JRawRunner < JRAW::AntProject
     attr_reader :root, :targets
 
     def initialize(template, root = '', options = {})
@@ -119,8 +119,8 @@ module RAW
     end
   end
 
-  # Handles the startup of RAW with parsing options etc.
-  class RawTool
+  # Handles the startup of JRAW with parsing options etc.
+  class JRawTool
     def parse!(args)
       if args.length == 0
         puts options
@@ -134,7 +134,7 @@ module RAW
           puts options
         else
           @root_dir = '.' if @root_dir.nil?
-          RawRunner.new(general[0], @root_dir, {:loglevel => @loglevel, :target => @target})
+          JRawRunner.new(general[0], @root_dir, {:loglevel => @loglevel, :target => @target})
         end
       end
     end
@@ -149,7 +149,7 @@ module RAW
     end
 
     def self.parse!(args = ARGV)
-      RawTool.new.parse!(args)
+      JRawTool.new.parse!(args)
     end
 
     def loglevel(level)
@@ -171,8 +171,8 @@ module RAW
     def options
       OptionParser.new do |o|
         o.set_summary_indent('  ')
-        o.banner =    "Usage: raw raw-script-url [OPTIONS]"
-        o.define_head "Ruby ANT Wrapper (RAW)."
+        o.banner =    "Usage: jraw jraw-script-url [OPTIONS]"
+        o.define_head "Ruby ANT Wrapper (JRAW)."
 
         o.separator ""
         o.separator "GENERAL OPTIONS"
@@ -185,14 +185,14 @@ module RAW
         o.separator ""
         o.separator "EXAMPLES"
         o.separator "  run example script:"
-        o.separator "    raw scripts/ant.rb -r ../.. -v \n"
-        o.separator "  Run a raw-script from a pastie URL:"
-        o.separator "    raw http://www.pastie.org/508302 -r ../.. -v -l debug \n"
+        o.separator "    jraw scripts/ant.rb -r ../.. -v \n"
+        o.separator "  Run a jraw-script from a pastie URL:"
+        o.separator "    jraw http://www.pastie.org/508302 -r ../.. -v -l debug \n"
         o.separator "  Run a script without parameters:"
-        o.separator "    raw ant.rb\n"
+        o.separator "    jraw ant.rb\n"
       end
     end
   end
 end
 
-RAW::RawTool.parse!
+JRAW::JRawTool.parse!

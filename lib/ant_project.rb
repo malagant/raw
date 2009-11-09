@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and limitations 
 # under the License.
 
-module RAW
+module JRAW
   class AntProject
     require 'logger'
     require 'ant_task'
@@ -25,7 +25,7 @@ module RAW
 
     # Create an AntProject. Parameters are specified via a hash:
     # :ant_home => <em>Ant basedir</em>
-    #   -A String indicating the location of the ANT_HOME directory. If provided, RAW will
+    #   -A String indicating the location of the ANT_HOME directory. If provided, JRAW will
     #   load the classes from the ANT_HOME/lib dir. If ant_home is not provided, the ANT jar files
     #   must be available on the CLASSPATH.
     # :name => <em>project_name</em>
@@ -50,16 +50,16 @@ module RAW
     # This is for further initializations inside the constructor
     # and must be called once from the users ANT script
     # Example usage:
-    # init_project :basedir => '/Users/mjohann/projects/jruby_raw',
+    # init_project :basedir => '/Users/mjohann/projects/jruby_jraw',
     #         :name => 'JRuby',
     #         :default => 'jar',
     #         :anthome => ANT_HOME
     def init_project(options)
       # The ANT version used
-      logger.info RAW::ApacheAnt::Main.ant_version
-      @ant_version = RAW::ApacheAnt::Main.ant_version[/\d\.\d\.\d/].to_f
+      logger.info JRAW::ApacheAnt::Main.ant_version
+      @ant_version = JRAW::ApacheAnt::Main.ant_version[/\d\.\d\.\d/].to_f
       # instance of ANT project
-      @project = RAW::ApacheAnt::Project.new
+      @project = JRAW::ApacheAnt::Project.new
       # The default project name taken from the options hash or left blank
       @project.name = options[:name] || ''
       # The default ANT target taken from the options hash or left blank
@@ -123,7 +123,7 @@ module RAW
       end
       logger.debug instance_variables
       # TODO: Hack
-      @ant_version = RAW::ApacheAnt::Main.ant_version[/\d\.\d\.\d/].to_f
+      @ant_version = JRAW::ApacheAnt::Main.ant_version[/\d\.\d\.\d/].to_f
     end
 
     def instvar(name)

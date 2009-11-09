@@ -14,7 +14,7 @@
 # ATTENTION!!!!! This is just experimental and definitly not working ;)
 # Please don't try this peace of s***
 
-require 'raw'
+require 'jraw'
 require 'rexml/document'
 
 class BuildFileConverter
@@ -32,7 +32,7 @@ class BuildFileConverter
   end
 
   def generate_project(project)
-    puts "@ant_project = RAW::AntProject.new(#{extract_options(project.attributes)})"
+    puts "@ant_project = JRAW::AntProject.new(#{extract_options(project.attributes)})"
   end
 
   private

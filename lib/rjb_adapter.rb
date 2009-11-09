@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and limitations 
 # under the License.
 
-module RAW
+module JRAW
   module RjbAdapter
     # We test if the RUBY_PLATFORM is 'java'
     # If true we will use JRuby

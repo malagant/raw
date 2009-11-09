@@ -13,17 +13,17 @@
 $LOAD_PATH.push(FileUtils::pwd + '/lib')
 require 'rubygems'
 require 'hoe'
-require 'lib/raw'
+require 'lib/jraw'
 require 'rake/testtask'
 
 def apply_default_hoe_properties(hoe)
   hoe.remote_rdoc_dir = ''
-  hoe.rubyforge_name = 'raw'
+  hoe.rubyforge_name = 'jraw'
   hoe.author = 'Michael Johann'
-  hoe.email = 'malagant1969@googlemail.com'
+  hoe.email = 'mjohann@rails-experts.com'
   hoe.url = 'http://kenai.com/projects/raw/'
   hoe.summary = 'A Ruby module that wraps the Apache Ant build tool. 
-                 RAW can be used to invoke Ant Tasks from a Ruby or a JRuby script.'
+                 JRAW can be used to invoke Ant Tasks from a Ruby or a JRuby script.'
   hoe.description = hoe.paragraphs_of('README', 2..5).join("\n\n")
   # hoe.changes = hoe.paragraphs_of('HISTORY', 0..1).join("\n\n")
   puts "Current changes in this release_______________ "
@@ -32,13 +32,13 @@ def apply_default_hoe_properties(hoe)
 end
 
 # builds the MRI Gem
-Hoe.new('raw', RAW::VERSION) do |hoe|
+Hoe.new('jraw', JRAW::VERSION) do |hoe|
   apply_default_hoe_properties hoe
   hoe.extra_deps << ["rjb", ">= 1.0.3"]
 end
 
 #builds the JRuby Gem
-Hoe.new('raw', RAW::VERSION) do |hoe|
+Hoe.new('jraw', JRAW::VERSION) do |hoe|
   apply_default_hoe_properties hoe
   hoe.spec_extras = { :platform => 'java' }
 end

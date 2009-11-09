@@ -1,4 +1,4 @@
-module RAW
+module JRAW
   class Target
     attr_accessor :name, :dependencies, :block
     def initialize(name)

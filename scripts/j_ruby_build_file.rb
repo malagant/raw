@@ -1,4 +1,4 @@
-init_project :basedir => '/Users/mjohann/projects/jruby_raw',
+init_project :basedir => '/Users/mjohann/projects/jruby_jraw',
              :name => 'JRuby',
              :default => 'jar'
 
@@ -25,7 +25,7 @@ build_properties
 property :name => "rspec.gem", :value => "rspec-1.2.6.gem"
 property :name => "rake.gem", :value => "rake-0.8.7.gem"
 
-@jruby_src = "/Users/mjohann/projects/jruby_raw"
+@jruby_src = "/Users/mjohann/projects/jruby_jraw"
 @build_lib_dir = @jruby_src + "/" + property_value('build.lib.dir')
 
 

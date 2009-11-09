@@ -12,8 +12,8 @@
 
 require 'rjb_adapter'
 
-module RAW
-  module RAWClassLoader
+module JRAW
+  module JRAWClassLoader
     require 'find'
     
     def match(*paths)
@@ -24,7 +24,7 @@ module RAW
     
     def load_ant_libs(ant_home)
       jars = match(ant_home + File::SEPARATOR + 'lib') {|p| ext = p[-4...p.size]; ext && ext.downcase == '.jar'} 
-      RAW::RjbAdapter.load(jars)
+      JRAW::RjbAdapter.load(jars)
     end
     
     module_function :match, :load_ant_libs

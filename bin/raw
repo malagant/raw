@@ -1,3 +1,0 @@
-#!/usr/bin/env jruby
-require '../lib/raw_runner'
-

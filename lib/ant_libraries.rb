@@ -12,7 +12,7 @@
 
 require 'rjb_adapter'
 
-module RAW
+module JRAW
   # Defining some Java classes for building the ant tasks etc
   module ApacheAnt
     # The default logger
